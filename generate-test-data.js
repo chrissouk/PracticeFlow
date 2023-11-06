@@ -34,8 +34,8 @@ function generateTrainingSession() {
 
 // generate 0 sessions and append them to the file
 // > 10 000 to get good results
-let sessionCount = 0;
-let fileName = '';
+let sessionCount = 25000;
+let fileName = 'test-data.txt';
 for (let i = 0; i < sessionCount; i++) {
   let session = generateTrainingSession();
   fs.appendFileSync(path.join(__dirname, fileName), session + '\n', 'utf8');

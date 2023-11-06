@@ -5,14 +5,14 @@ const fs = require('fs');
 async function generatePractice() {
     
     // load model
-    const modelSource = "file://./Models/model.json";
+    const modelSource = "file://./Models/V1/model.json";
     const model = await tf.loadLayersModel(modelSource);
 
     // initialize new tokenizer
     const tokenizer = new natural.WordTokenizer();
 
     // initialize variables
-    const inputLength = 2;
+    const inputLength = 5;
     const numEpochs = 2;
     const batchSize = 32;
 
@@ -93,7 +93,7 @@ async function generatePractice() {
         return text.join(' ');
     }
     
-    const rawPractice = generateRawPractice(model, 'Warm up:', 20);
+    const rawPractice = generateRawPractice(model, 'Warm up 400 freestyle easy', 20);
 
     // clean up data
     function refinePractice(practice) {

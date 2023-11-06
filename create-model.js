@@ -7,8 +7,8 @@ async function createModel() {
     const tokenizer = new natural.WordTokenizer();
 
     // initialize variables
-    const inputLength = 2;
-    const numEpochs = 10;
+    const inputLength = 5;
+    const numEpochs = 15;
     const batchSize = 32;
 
     // Read the practice plan text from a file
@@ -18,10 +18,15 @@ async function createModel() {
     try {
         practicePlanText = await fs.promises.readFile(source, 'utf8');
     } catch (error) {
-        console.log('There was a problem reading the test data:', error);
+        console.error(`There was a problem reading the file at ${source}:`, error);
     }
 
-    const tokenized = tokenizer.tokenize(practicePlanText);
+    let tokenized;
+    try {
+        tokenized = tokenizer.tokenize(practicePlanText);
+    } catch (error) {
+        console.error('There was a problem tokenizing the text:', error);
+    }
 
     // Build vocabulary and update 'numWords'
     const wordIndex = {};
@@ -75,10 +80,18 @@ async function createModel() {
     const YTensor = tf.oneHot(tf.tensor1d(Y, 'int32'), numWords);
     
     // train model
-    await model.fit(XTensor, YTensor, { epochs: numEpochs, batch_size: batchSize });
+    try {
+        await model.fit(XTensor, YTensor, { epochs: numEpochs, batchSize: batchSize });
+    } catch (error) {
+        console.error('There was a problem training the model:', error);
+    }
 
     // save model
-    await model.save('file://./Models/');
+    try {
+        await model.save('file://./Models/V1');
+    } catch (error) {
+        console.error('There was a problem saving the model:', error);
+    }
 }
 
 // Call the asynchronous function to start the execution
