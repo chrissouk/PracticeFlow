@@ -5,7 +5,7 @@ const fs = require('fs');
 async function generatePractice() {
     
     // load model
-    const modelSource = "file://./Models/V1/model.json";
+    const modelSource = "file://./Models/V2-Minimizing/model.json";
     const model = await tf.loadLayersModel(modelSource);
 
     // initialize new tokenizer
@@ -93,7 +93,7 @@ async function generatePractice() {
         return text.join(' ');
     }
     
-    const rawPractice = generateRawPractice(model, 'Warm up 400 freestyle easy', 20);
+    const rawPractice = generateRawPractice(model, 'Warm up 400 freestyle easy', 12);
 
     // clean up data
     function refinePractice(practice) {

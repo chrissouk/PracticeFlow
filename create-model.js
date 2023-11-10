@@ -8,7 +8,7 @@ async function createModel() {
 
     // initialize variables
     const inputLength = 5;
-    const numEpochs = 15;
+    const numEpochs = 100;
     const batchSize = 32;
 
     // Read the practice plan text from a file
@@ -88,7 +88,7 @@ async function createModel() {
 
     // save model
     try {
-        await model.save('file://./Models/V1');
+        await model.save('file://./Models/V2-Minimizing');
     } catch (error) {
         console.error('There was a problem saving the model:', error);
     }
