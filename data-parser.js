@@ -225,10 +225,12 @@ async function dataParser(){
                 if (stats.includes("WU")) { type = "WU"; }
                 else { type = stats.slice(3, 4).trim(); }
                 
-                if (stats.includes("WU") && stats.slice(5, stats.length - 5) == 3) {
+                if (stats.includes("WU") && stats.slice(5, stats.length - 5).length == 3) {
                     stroke = stats.slice(5, 8).trim();
-                } else if (stats.includes("WU") && stats.slice(5, stats.length - 5) == 2) {
+                } else if (stats.includes("WU") && stats.slice(5, stats.length - 5).length == 2) {
                     stroke = stats.slice(5, 7).trim();
+                } else if (stats.slice(4, stats.length - 5).length == 3) {
+                    stroke = stats.slice(4, 7).trim();
                 } else {
                     stroke = stats.slice(4, 6).trim();
                 }
