@@ -1,47 +1,27 @@
 const fs = require('fs');
 const path = require('path');
-let pdfjsLib;
-import('pdfjs-dist').then(pdfjs => {
-    pdfjsLib = pdfjs;
-    dataParser();
-});
+const pdfParse = require('pdf-parse');
 
 const directoryPath = path.join(__dirname, 'Data/Tim\'s Workouts');
-let linedDataArray = []; // Initialize an empty array
+let linedDataArray = [];
 let setGroupedDataArray = [];
 let currentGroup = [];
 let filteredDataArray = [];
 let practiceGroupedDataArray = [];
 
-
-function dataParser(){
-
-    async function extractTextFromPDF(pdfPath) {
-        const pdf = await pdfjsLib.getDocument(pdfPath).promise;
-        let text = '';
-        for(let i = 1; i <= pdf.numPages; i++) {
-            const page = await pdf.getPage(i);
-            const tokenizedText = await page.getTextContent();
-            const strings = tokenizedText.items.map(token => token.str);
-            text += strings.join(' ');
-        }
-        return text;
-    }
-
-    const files = fs.readdirSync(directoryPath);
-
-    files.forEach(file => {
+async function dataParser(){
+    for (const file of fs.readdirSync(directoryPath)) {
         if(path.extname(file) === '.pdf') {
-            const pdfPath = path.join(directoryPath, file);
-            extractTextFromPDF(pdfPath)
-                .then(text => {
-                    let lines = text.split('\n'); // Split the text into lines
-                    console.log(lines);
-                    linedDataArray.push(...lines); // Push the lines into the array
-                })
-                .catch(err => console.error(err));
+            let dataBuffer = fs.readFileSync(path.join(directoryPath, file));
+            try {
+                let data = await pdfParse(dataBuffer);
+                let lines = data.text.split('\n'); // Split the text into lines
+                linedDataArray.push(...lines); // Push the lines into the array)
+            } catch (error) {
+                console.error(`Error parsing PDF file ${file}: ${error}`);
+            }
         }
-    });
+    }
 
     // tabularize data
 
@@ -103,5 +83,7 @@ function dataParser(){
         description[i].unshift(i);
     }
 
-    // console.log(description);
+    console.log(description);
 }
+
+dataParser();
