@@ -31,9 +31,10 @@ async function dataParser(){
     // group into sets
     linedDataArray.forEach((line, index) => {
         if (typeof line === 'string' && typeof linedDataArray[index - 1] === 'string') {
-            if (line == '' || (line.endsWith(' x') && !linedDataArray[index - 1].includes(':'))) {
+            if (line == '' || line.endsWith(' x')) {
                 if (currentGroup.length > 0) {
                     setGroupedDataArray.push(currentGroup);
+                    console.log(currentGroup);
                     currentGroup = [];
                 }
             }
@@ -68,24 +69,25 @@ async function dataParser(){
         practiceGroupedDataArray.push(currentGroup);
     }
 
-// split into descriptions and details
+// split into practiceInfo, setInfo, and exerciseInfo
 
-    let descriptions = [];
-    let details = [];
+    let practiceInfo = [];
+    let setInfo = [];
+    let exerciseInfo = [];
 
-    // create descriptions
-    practiceGroupedDataArray.forEach((description) => {
-        descriptions.push(description[0]);
+// CREATE PRACTICE INFO
+    practiceGroupedDataArray.forEach((info) => {
+        practiceInfo.push(info[0]);
     });
-    // filter descriptions
-    descriptions = descriptions.map(description => description.filter(item => item !== ''));
+    // filter practiceInfo
+    practiceInfo = practiceInfo.map(info => info.filter(item => item !== ''));
     // add ids
-    for(let i = 0; i < descriptions.length; i++) {
-        descriptions[i].unshift(i);
+    for(let i = 0; i < practiceInfo.length; i++) {
+        practiceInfo[i].unshift(i);
     }
-    // reorgainze descriptions
-    descriptions.forEach((description) => {
-        let headers = description[2];
+    // reorgainze practiceInfo
+    practiceInfo.forEach((info) => {
+        let headers = info[2];
 
         let distance = headers.split('Duration:')[0].split('Distance:')[1].split(' ')[0].trim();
         distance = cleanNumber(distance);
@@ -97,31 +99,69 @@ async function dataParser(){
         let createdDate = headers.split('Author:')[0].split('Created Date:')[1].trim();
         let author = headers.split('Author:')[1].trim();
 
-        description.pop(); // removes "headers" line
+        info.pop(); // removes "headers" line
 
-        description.push(distance, duration, stress, course, type, createdDate, author);
+        info.push(distance, duration, stress, course, type, createdDate, author);
     });
 
-    // create details w/ practice and set ids
+// CREATE SET INFO & EXERCISE INFO
     practiceGroupedDataArray.forEach((practice, practiceId) => {
-
         for(let i = 1; i < practice.length; i++) {
             let set = practice[i];
             let tempArray = [];
 
             tempArray.push(practiceId);     // practice id
             tempArray.push(i - 1);          // set id
-            set.forEach((line) => {
+            set.forEach((line) => {         // add every line in the set
                 if (typeof line === 'string') {
                     tempArray.push(line);
                 }
             })
-            details.push(tempArray);
+            setInfo.push(tempArray);
+            exerciseInfo.push(tempArray);
+        }
+    });
+    setInfo.forEach((set, index) => {
+
+        let practiceID = set[0];
+        let setID = set[1];
+        let title;
+        let distance;
+        let duration;
+        let rounds;
+
+        // parse set info
+        let setHeaders = set.find(item => typeof item === 'string' && item.endsWith(' x'));
+
+        // set title
+        if (setHeaders == set[2] || /^\d+ x /.test(set[2])) {
+            title = "Untitled";
+        } else {
+            title = set[2];
         }
 
+        let lastCommaIndex = setHeaders.lastIndexOf(",");
+        let dissection;
+
+        if (lastCommaIndex !== -1) {
+            // If there is a comma, split after three numbers following the last comma
+            dissection = (setHeaders.slice(0, lastCommaIndex + 4) + " " + setHeaders.slice(lastCommaIndex + 4).trim()).split(" ");
+        } else {
+            // If there is no comma, split after the first three numbers
+            dissection = setHeaders.split(/(?<=^\d{3})/).map(str => str.trim());
+        }
+        distance = cleanNumber(dissection[0]);
+
+        let lastColonIndex = dissection[1].lastIndexOf(":");
+        duration = dissection[1].slice(0, lastColonIndex + 3);
+        rounds = dissection[1].slice(lastColonIndex + 3).split(' ')[0];
+
+        setInfo[index] = [practiceID, setID, title, distance, duration, rounds];
+
     });
-    // filter details
-    details.forEach((set, index) => {
+    exerciseInfo.forEach((set, index) => {
+        let newSet = [];
+
         let startIndex;
         let endIndex;
 
@@ -142,17 +182,9 @@ async function dataParser(){
             set.splice(startIndex + 1, endIndex - startIndex - 1);
         }
 
-    // reorgainze details
-
-        let newSet = [];
-
         let practiceID = set[0];
         let setID = set[1];
-        let setTitle;
-        let setDistance;
-        let setDuration;
-        let rounds;
-        let exerciseID;
+        let exerciseID = -1;
         let reps;
         let distance;
         let interval;
@@ -160,58 +192,18 @@ async function dataParser(){
         let type;
         let stroke;
         let pace;
-        let notes;
+        let notes;        
 
-
-        // parse set description
+        // find exercises
         let setHeaders = set.find(item => typeof item === 'string' && item.endsWith(' x'));
-
-        // set title
-        if (setHeaders == set[2]) {
-            setTitle = "Untitled";
-        } else {
-            setTitle = set[2];
-        }
-
-        let lastCommaIndex = setHeaders.lastIndexOf(",");
-        let dissection;
-
-        if (lastCommaIndex !== -1) {
-            // If there is a comma, split after three numbers following the last comma
-            dissection = (setHeaders.slice(0, lastCommaIndex + 4) + " " + setHeaders.slice(lastCommaIndex + 4).trim()).split(" ");
-        } else {
-            // If there is no comma, split after the first three numbers
-            dissection = setHeaders.split(/(?<=^\d{3})/).map(str => str.trim());
-        }
-        setDistance = cleanNumber(dissection[0]);
-
-        let lastColonIndex = dissection[1].lastIndexOf(":");
-        setDuration = dissection[1].slice(0, lastColonIndex + 3);
-        rounds = dissection[1].slice(lastColonIndex + 3).split(' ')[0];
-
-    // remake details
-
         let exerciseIndex = set.findIndex(item => item === setHeaders) + 1;
 
         for (let i = exerciseIndex; i < set.length; i++) {
             let exercise = set[i];
 
-            exerciseID = i;
+            if ((/^\d+ x /).test(exercise)) {
 
-            if (exercise.startsWith('Rest:')) {
-
-                reps = 1;
-                distance = 0;
-                interval = convertToSeconds(exercise.split(': ')[1].trim());
-                energy = "RES";
-                type = "";
-                stroke = "";
-                pace = "";
-                notes = "Rest"
-
-                newSet.push([practiceID, setID, setTitle, setDistance, setDuration, rounds, exerciseID, reps, distance, interval, energy, type, stroke, pace, notes]);
-
-            } else if ((/^\d+ x /).test(exercise)) {
+                exerciseID++;
 
                 try {
                     reps = exercise.split(' x ')[0].trim();
@@ -270,58 +262,63 @@ async function dataParser(){
                     console.error(`\nError: Can't parse notes.\nPracticeID: ${practiceID}\nSetID: ${setID}\nexerciseID: ${exerciseID}\n\n${error}`);
                 }
 
-                newSet.push([practiceID, setID, setTitle, setDistance, setDuration, rounds, exerciseID, reps, distance, interval, energy, type, stroke, pace, notes]);
-            
+                newSet.push([practiceID, setID, exerciseID, reps, distance, interval, energy, type, stroke, pace, notes]);
+
             } else {
-                newSet[newSet.length - 1][14] += " " + exercise;
+                newSet[newSet.length - 1][10] += " " + exercise;
             }
         }
+        exerciseInfo[index] = newSet;
 
-        details[index] = newSet;
     });
 
-    // flatten details
-    details = details.reduce((accumulator, currentValue) => accumulator.concat(currentValue), []);
+    // flatten exerciseInfo
+    exerciseInfo = exerciseInfo.reduce((accumulator, currentValue) => accumulator.concat(currentValue), []);
 
-    // Convert each sub-array in descriptions to an object
-    descriptions = descriptions.map(description => {
+    // Convert to objects
+    practiceInfo = practiceInfo.map(info => {
         return {
-            practiceID: description[0],
-            title: description[1],
-            distance: description[2],
-            duration: description[3],
-            stress: description[4],
-            course: description[5],
-            type: description[6],
-            creationDate: description[7],
-            author: description[8]
+            practiceID: info[0],
+            title: info[1],
+            distance: info[2],
+            duration: info[3],
+            stress: info[4],
+            course: info[5],
+            type: info[6],
+            creationDate: info[7],
+            author: info[8]
         };
     });
-    
-    // Convert each sub-array in details to an object
-    details = details.map(detail => {
+    setInfo = setInfo.map(info => {
         return {
-            practiceID: detail[0],
-            setID: detail[1],
-            setTitle: detail[2],
-            setDistance: detail[3],
-            setDuration: detail[4],
-            rounds: detail[5],
-            exerciseID: detail[6],
-            reps: detail[7],
-            distance: detail[8],
-            interval: detail[9],
-            energy: detail[10],
-            type: detail[11],
-            stroke: detail[12],
-            pace: detail[13],
-            notes: detail[14]
+            practiceID: info[0],
+            setID: info[1],
+            title: info[2],
+            distance: info[3],
+            duration: info[4],
+            rounds: info[5]
+        };
+    });
+    exerciseInfo = exerciseInfo.map(info => {
+        return {
+            practiceID: info[0],
+            setID: info[1],
+            exerciseID: info[2],
+            reps: info[3],
+            distance: info[4],
+            interval: info[5],
+            energy: info[6],
+            type: info[7],
+            stroke: info[8],
+            pace: info[9],
+            notes: info[10]
         };
     });
 
-    // Write details and descriptions to CSV
-    await fastCsv.writeToPath('Data/Training/descriptions.csv', descriptions, { headers: true, delimiter: '|' });
-    await fastCsv.writeToPath('Data/Training/details.csv', details, { headers: true, delimiter: '|' });
+    // Write setInfo and practiceInfo to CSV
+    await fastCsv.writeToPath('Data/Training/practiceInfo.csv', practiceInfo, { headers: true, delimiter: '|' });
+    await fastCsv.writeToPath('Data/Training/setInfo.csv', setInfo, { headers: true, delimiter: '|' });
+    await fastCsv.writeToPath('Data/Training/exerciseInfo.csv', exerciseInfo, { headers: true, delimiter: '|' });
 }
 
 function convertToSeconds(time) {
