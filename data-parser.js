@@ -1,9 +1,9 @@
-const { sub } = require('@tensorflow/tfjs');
 const fs = require('fs');
 const path = require('path');
 const pdfParse = require('pdf-parse');
+const fastCsv = require('fast-csv');
 
-const directoryPath = path.join(__dirname, 'Data/Tim\'s Workouts');
+const directoryPath = path.join(__dirname, 'Data/Raw/Teamunify');
 let linedDataArray = [];
 let setGroupedDataArray = [];
 let currentGroup = [];
@@ -152,7 +152,7 @@ async function dataParser(){
         let setDistance;
         let setDuration;
         let rounds;
-        let sequenceID;
+        let exerciseID;
         let reps;
         let distance;
         let interval;
@@ -183,7 +183,7 @@ async function dataParser(){
             // If there is no comma, split after the first three numbers
             dissection = setHeaders.split(/(?<=^\d{3})/).map(str => str.trim());
         }
-        setDistance = dissection[0];
+        setDistance = cleanNumber(dissection[0]);
 
         let lastColonIndex = dissection[1].lastIndexOf(":");
         setDuration = dissection[1].slice(0, lastColonIndex + 3);
@@ -191,34 +191,54 @@ async function dataParser(){
 
     // remake details
 
-        let workoutIndex = set.findIndex(item => item === setHeaders) + 1;
+        let exerciseIndex = set.findIndex(item => item === setHeaders) + 1;
 
-        for (let i = workoutIndex; i < set.length; i++) {
-            let workout = set[i];
+        for (let i = exerciseIndex; i < set.length; i++) {
+            let exercise = set[i];
 
-            sequenceID = i;
+            exerciseID = i;
 
-            if (workout.startsWith('Rest:')) {
+            if (exercise.startsWith('Rest:')) {
+
                 reps = 1;
                 distance = 0;
-                interval = convertToSeconds(workout.split(': ')[1].trim());
+                interval = convertToSeconds(exercise.split(': ')[1].trim());
                 energy = "RES";
                 type = "";
                 stroke = "";
                 pace = "";
                 notes = "Rest"
 
-                newSet.push([practiceID, setID, setTitle, setDistance, setDuration, rounds, sequenceID, reps, distance, interval, energy, type, stroke, pace, notes]);
-            } else if ((/^\d+ x /).test(workout)) {
-                reps = workout.split(' x ')[0].trim();
-                distance = cleanNumber(workout.split(' x ')[1].split(' @ ')[0].trim());
-                interval = convertToSeconds(workout.split(' @ ')[1].split(' ')[0].trim());
+                newSet.push([practiceID, setID, setTitle, setDistance, setDuration, rounds, exerciseID, reps, distance, interval, energy, type, stroke, pace, notes]);
+
+            } else if ((/^\d+ x /).test(exercise)) {
+
+                try {
+                    reps = exercise.split(' x ')[0].trim();
+                } catch (error) {
+                    console.error(`\nError: Can't parse reps.\nPracticeID: ${practiceID}\nSetID: ${setID}\nexerciseID: ${exerciseID}\n\n${error}`);
+                }
+                try {
+                    distance = cleanNumber(exercise.split(' x ')[1].split(' @ ')[0].trim());
+                } catch (error) {
+                    console.error(`\nError: Can't parse distance.\nPracticeID: ${practiceID}\nSetID: ${setID}\nexerciseID: ${exerciseID}\n\n${error}`);
+                }
+                try {
+                    interval = convertToSeconds(exercise.split(' @ ')[1].split(' ')[0].trim());
+                } catch (error) {
+                    console.error(`\nError: Can't parse interval.\nPracticeID: ${practiceID}\nSetID: ${setID}\nexerciseID: ${exerciseID}\n\n${error}`);
+                }
 
                 let statsIndex = -1; // default value
-                if (workout.indexOf("EN") !== -1) { statsIndex = workout.indexOf("EN"); }
-                else if (workout.indexOf("RE") !== -1) { statsIndex = workout.indexOf("RE"); }
-                else if (workout.indexOf("SP") !== -1) { statsIndex = workout.indexOf("SP"); }
-                let stats = workout.slice(statsIndex, workout.length);
+                let stats;
+                try {
+                    if (exercise.indexOf("EN") !== -1) { statsIndex = exercise.indexOf("EN"); }
+                    else if (exercise.indexOf("RE") !== -1) { statsIndex = exercise.indexOf("RE"); }
+                    else if (exercise.indexOf("SP") !== -1) { statsIndex = exercise.indexOf("SP"); }
+                    stats = exercise.slice(statsIndex, exercise.length);
+                } catch (error) {
+                    console.error(`\nError: Can't parse stats.\nPracticeID: ${practiceID}\nSetID: ${setID}\nexerciseID: ${exerciseID}\n`);
+                }
 
                 energy = stats.slice(0, 3).trim();
 
@@ -231,19 +251,29 @@ async function dataParser(){
                     stroke = stats.slice(5, 7).trim();
                 } else if (stats.slice(4, stats.length - 5).length == 3) {
                     stroke = stats.slice(4, 7).trim();
-                } else {
+                } else if (stats.slice(4, stats.length - 5).length == 2) {
                     stroke = stats.slice(4, 6).trim();
+                } else {
+                    console.error(`\nError: Can't parse stroke stat.\nPracticeID: ${practiceID}\nSetID: ${setID}\nexerciseID: ${exerciseID}\n`);
                 }
                 
-                pace = stats.slice(-5).trim();
+                try {
+                    pace = stats.slice(-5).trim();
+                } catch (error) {
+                    console.error(`\nError: Can't parse pace stat.\nPracticeID: ${practiceID}\nSetID: ${setID}\nexerciseID: ${exerciseID}\n\n${error}`);
+                }
                 
-                let notesIndex = workout.indexOf(":") + 3;
-                notes = workout.slice(notesIndex, statsIndex).trim();
+                try {
+                    let notesIndex = exercise.indexOf(":") + 3;
+                    notes = exercise.slice(notesIndex, statsIndex).trim();
+                } catch (error) {
+                    console.error(`\nError: Can't parse notes.\nPracticeID: ${practiceID}\nSetID: ${setID}\nexerciseID: ${exerciseID}\n\n${error}`);
+                }
 
-                newSet.push([practiceID, setID, setTitle, setDistance, setDuration, rounds, sequenceID, reps, distance, interval, energy, type, stroke, pace, notes]);
+                newSet.push([practiceID, setID, setTitle, setDistance, setDuration, rounds, exerciseID, reps, distance, interval, energy, type, stroke, pace, notes]);
             
             } else {
-                newSet[newSet.length - 1][14] += " " + workout;
+                newSet[newSet.length - 1][14] += " " + exercise;
             }
         }
 
@@ -253,8 +283,45 @@ async function dataParser(){
     // flatten details
     details = details.reduce((accumulator, currentValue) => accumulator.concat(currentValue), []);
 
-    console.log(details);
-    console.log(descriptions);
+    // Convert each sub-array in descriptions to an object
+    descriptions = descriptions.map(description => {
+        return {
+            practiceID: description[0],
+            title: description[1],
+            distance: description[2],
+            duration: description[3],
+            stress: description[4],
+            course: description[5],
+            type: description[6],
+            creationDate: description[7],
+            author: description[8]
+        };
+    });
+    
+    // Convert each sub-array in details to an object
+    details = details.map(detail => {
+        return {
+            practiceID: detail[0],
+            setID: detail[1],
+            setTitle: detail[2],
+            setDistance: detail[3],
+            setDuration: detail[4],
+            rounds: detail[5],
+            exerciseID: detail[6],
+            reps: detail[7],
+            distance: detail[8],
+            interval: detail[9],
+            energy: detail[10],
+            type: detail[11],
+            stroke: detail[12],
+            pace: detail[13],
+            notes: detail[14]
+        };
+    });
+
+    // Write details and descriptions to CSV
+    await fastCsv.writeToPath('Data/Training/descriptions.csv', descriptions, { headers: true, delimiter: '|' });
+    await fastCsv.writeToPath('Data/Training/details.csv', details, { headers: true, delimiter: '|' });
 }
 
 function convertToSeconds(time) {
