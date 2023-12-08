@@ -11,6 +11,7 @@ let filteredDataArray = [];
 let practiceGroupedDataArray = [];
 
 async function dataParser(){
+    // scan pdfs
     for (const file of fs.readdirSync(directoryPath)) {
         if(path.extname(file) === '.pdf') {
             let dataBuffer = fs.readFileSync(path.join(directoryPath, file));
@@ -24,17 +25,12 @@ async function dataParser(){
         }
     }
 
-    // tabularize data
-
-    // digest data
-
     // group into sets
     linedDataArray.forEach((line, index) => {
         if (typeof line === 'string' && typeof linedDataArray[index - 1] === 'string') {
             if (line == '' || line.endsWith(' x')) {
                 if (currentGroup.length > 0) {
                     setGroupedDataArray.push(currentGroup);
-                    console.log(currentGroup);
                     currentGroup = [];
                 }
             }
@@ -76,8 +72,8 @@ async function dataParser(){
     let exerciseInfo = [];
 
 // CREATE PRACTICE INFO
-    practiceGroupedDataArray.forEach((info) => {
-        practiceInfo.push(info[0]);
+    practiceGroupedDataArray.forEach((practice) => {
+        practiceInfo.push(practice[0]);
     });
     // filter practiceInfo
     practiceInfo = practiceInfo.map(info => info.filter(item => item !== ''));
@@ -88,6 +84,17 @@ async function dataParser(){
     // reorgainze practiceInfo
     practiceInfo.forEach((info) => {
         let headers = info[2];
+
+        let titleParts = info[1].split(' ');
+        titleParts.splice(0, 1); // Remove the date
+        info[1] = titleParts.join(' ').trim();
+        if (/^(am|pm)/i.test(info[1])) {
+            titleParts = info[1].split(' ');
+            info[1] = titleParts.splice(1,titleParts.length).join(' ');
+        }
+        if (info[1] == '') {
+            info[1] = 'Untitled';
+        }
 
         let distance = headers.split('Duration:')[0].split('Distance:')[1].split(' ')[0].trim();
         distance = cleanNumber(distance);
