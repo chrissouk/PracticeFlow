@@ -141,7 +141,7 @@ async function dataParser(){
         let setHeaders = set.find(item => typeof item === 'string' && item.endsWith(' x'));
 
         // set title
-        if (setHeaders == set[2] || /^\d+ x /.test(set[2])) {
+        if (setHeaders == set[2] || /^\d+ x /.test(set[2]) || set[2].startsWith('REST:')) {
             title = "Untitled";
         } else {
             title = set[2];
