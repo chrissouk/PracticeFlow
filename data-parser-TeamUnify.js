@@ -3,7 +3,7 @@ const path = require('path');
 const pdfParse = require('pdf-parse');
 const fastCsv = require('fast-csv');
 
-const directoryPath = path.join(__dirname, 'Data/Raw/Teamunify');
+const directoryPath = path.join(__dirname, 'Data/Raw/TeamUnify');
 let linedDataArray = [];
 let setGroupedDataArray = [];
 let currentGroup = [];
@@ -28,14 +28,21 @@ async function dataParser(){
     // group into sets
     linedDataArray.forEach((line, index) => {
         if (typeof line === 'string' && typeof linedDataArray[index - 1] === 'string') {
-            if (line == '' || line.endsWith(' x')) {
-                if (currentGroup.length > 0) {
-                    setGroupedDataArray.push(currentGroup);
-                    currentGroup = [];
+            if (line.endsWith(' x') && /^\d+ x /.test(linedDataArray[index - 1])) {
+                currentGroup.push(linedDataArray[index - 1]);
+                setGroupedDataArray.push(currentGroup);
+                currentGroup = [];
+            } else {
+                if (line == '' || line.endsWith(' x')) {
+                    if (currentGroup.length > 0) {
+                        setGroupedDataArray.push(currentGroup);
+                        currentGroup = [];
+                    }
                 }
+                currentGroup.push(linedDataArray[index - 1]);
             }
         }
-        currentGroup.push(linedDataArray[index - 1]);
+        
     });
     if (currentGroup.length > 0) {
         setGroupedDataArray.push(currentGroup);
@@ -76,39 +83,46 @@ async function dataParser(){
         practiceInfo.push(practice[0]);
     });
     // filter practiceInfo
-    practiceInfo = practiceInfo.map(info => info.filter(item => item !== ''));
+    practiceInfo = practiceInfo
+        .map(info => info.filter(item => item !== ''))
+        .filter(info => info.length > 0);
     // add ids
     for(let i = 0; i < practiceInfo.length; i++) {
         practiceInfo[i].unshift(i);
     }
     // reorgainze practiceInfo
     practiceInfo.forEach((info) => {
-        let headers = info[2];
-
-        let titleParts = info[1].split(' ');
-        titleParts.splice(0, 1); // Remove the date
-        info[1] = titleParts.join(' ').trim();
-        if (/^(am|pm)/i.test(info[1])) {
-            titleParts = info[1].split(' ');
-            info[1] = titleParts.splice(1,titleParts.length).join(' ');
+        // title
+        if (info[1] && typeof info[1] === 'string'){
+            let titleParts = info[1].split(' ');
+            titleParts.splice(0, 1); // Remove the date
+            info[1] = titleParts.join(' ').trim();
+            if (/^(am|pm)/i.test(info[1])) {
+                titleParts = info[1].split(' ');
+                info[1] = titleParts.splice(1,titleParts.length).join(' ');
+            }
+            if (info[1] == '') {
+                info[1] = 'Untitled';
+            }
         }
-        if (info[1] == '') {
-            info[1] = 'Untitled';
+        // headers
+        if (info[2] && typeof info[2] === 'string'){
+            let headers = info[2];
+
+            let distance = headers.split('Duration:')[0].split('Distance:')[1].split(' ')[0].trim();
+            distance = cleanNumber(distance);
+            let duration = headers.split('Stress:')[0].split('Duration:')[1].trim();
+            duration = convertToSeconds(duration);
+            let stress = headers.split('Course:')[0].split('Stress:')[1].trim();
+            let course = headers.split('Type:')[0].split('Course:')[1].trim();
+            let type = headers.split('Created Date:')[0].split('Type:')[1].trim();
+            let createdDate = headers.split('Author:')[0].split('Created Date:')[1].trim();
+            let author = headers.split('Author:')[1].trim();
+
+            info.pop(); // removes "headers" line
+
+            info.push(distance, duration, stress, course, type, createdDate, author);
         }
-
-        let distance = headers.split('Duration:')[0].split('Distance:')[1].split(' ')[0].trim();
-        distance = cleanNumber(distance);
-        let duration = headers.split('Stress:')[0].split('Duration:')[1].trim();
-        duration = convertToSeconds(duration);
-        let stress = headers.split('Course:')[0].split('Stress:')[1].trim();
-        let course = headers.split('Type:')[0].split('Course:')[1].trim();
-        let type = headers.split('Created Date:')[0].split('Type:')[1].trim();
-        let createdDate = headers.split('Author:')[0].split('Created Date:')[1].trim();
-        let author = headers.split('Author:')[1].trim();
-
-        info.pop(); // removes "headers" line
-
-        info.push(distance, duration, stress, course, type, createdDate, author);
     });
 
 // CREATE SET INFO & EXERCISE INFO
@@ -120,7 +134,7 @@ async function dataParser(){
             tempArray.push(practiceId);     // practice id
             tempArray.push(i - 1);          // set id
             set.forEach((line) => {         // add every line in the set
-                if (typeof line === 'string') {
+                if (typeof line === 'string' && !line.startsWith('REST:') && !line.startsWith('NOTE')) {
                     tempArray.push(line);
                 }
             })
@@ -129,6 +143,7 @@ async function dataParser(){
         }
     });
     setInfo.forEach((set, index) => {
+        console.log(set);
 
         let practiceID = set[0];
         let setID = set[1];
@@ -141,7 +156,7 @@ async function dataParser(){
         let setHeaders = set.find(item => typeof item === 'string' && item.endsWith(' x'));
 
         // set title
-        if (setHeaders == set[2] || /^\d+ x /.test(set[2]) || set[2].startsWith('REST:')) {
+        if (setHeaders == set[2] || /^\d+ x /.test(set[2])) {
             title = "Untitled";
         } else {
             title = set[2];
@@ -160,7 +175,7 @@ async function dataParser(){
         distance = cleanNumber(dissection[0]);
 
         let lastColonIndex = dissection[1].lastIndexOf(":");
-        duration = dissection[1].slice(0, lastColonIndex + 3);
+        duration = convertToSeconds(dissection[1].slice(0, lastColonIndex + 3));
         rounds = dissection[1].slice(lastColonIndex + 3).split(' ')[0];
 
         setInfo[index] = [practiceID, setID, title, distance, duration, rounds];
@@ -168,26 +183,6 @@ async function dataParser(){
     });
     exerciseInfo.forEach((set, index) => {
         let newSet = [];
-
-        let startIndex;
-        let endIndex;
-
-        // delete "NOTES:"
-        try {
-            startIndex = set.findIndex(line => typeof line === 'string' && line.includes("NOTES:") ); // Find the index of the item
-        } catch (error) { console.error(error); }
-        if (startIndex !== -1) {
-            set.splice(startIndex); // Remove the item and all following items
-        }
-
-        // delete "NOTE:"
-        try {
-            startIndex = set.findIndex(item => typeof item === 'string' && item.startsWith("NOTE:"));
-            endIndex = set.findIndex((item, i) => (typeof item === 'string' && i > startIndex && (item.startsWith("REST:") || /^\d+ x /.test(item))));
-        } catch (error) { console.error(error); }
-        if (startIndex !== -1 && endIndex !== -1) {
-            set.splice(startIndex + 1, endIndex - startIndex - 1);
-        }
 
         let practiceID = set[0];
         let setID = set[1];
@@ -223,7 +218,10 @@ async function dataParser(){
                     console.error(`\nError: Can't parse distance.\nPracticeID: ${practiceID}\nSetID: ${setID}\nexerciseID: ${exerciseID}\n\n${error}`);
                 }
                 try {
-                    interval = convertToSeconds(exercise.split(' @ ')[1].split(' ')[0].trim());
+                    interval = exercise.split(' @ ')[1].trim();
+                    const match = interval.match(/(\d{2}:\d{2})/);
+                    interval = match ? match[0] : null;
+                    interval = convertToSeconds(interval);
                 } catch (error) {
                     console.error(`\nError: Can't parse interval.\nPracticeID: ${practiceID}\nSetID: ${setID}\nexerciseID: ${exerciseID}\n\n${error}`);
                 }
@@ -271,7 +269,23 @@ async function dataParser(){
 
                 newSet.push([practiceID, setID, exerciseID, reps, distance, interval, energy, type, stroke, pace, notes]);
 
-            } else {
+            } 
+            // create rest as exercises, currently filtered out 
+            // else if (exercise.startsWith('Rest:')) {
+                
+            //     exerciseID++;
+
+            //     reps = 1;
+            //     distance = 0;
+            //     interval = convertToSeconds(exercise.split(' ')[1]);
+            //     energy = '';
+            //     type = 'R';
+            //     stroke = '';
+            //     pace = '';
+            //     notes = ''; 
+
+            // }
+            else {
                 newSet[newSet.length - 1][10] += " " + exercise;
             }
         }
@@ -282,18 +296,23 @@ async function dataParser(){
     // flatten exerciseInfo
     exerciseInfo = exerciseInfo.reduce((accumulator, currentValue) => accumulator.concat(currentValue), []);
 
-    // Convert to objects
+    // remove commas
+    practiceInfo = practiceInfo.map(info => info.map(s => typeof s === 'string' ? s.replace(/,/g, "") : s));
+    setInfo = setInfo.map(info => info.map(s => typeof s === 'string' ? s.replace(/,/g, "") : s));
+    exerciseInfo = exerciseInfo.map(info => info.map(s => typeof s === 'string' ? s.replace(/,/g, "") : s));
+
+    // convert to objects
     practiceInfo = practiceInfo.map(info => {
         return {
             practiceID: info[0],
             title: info[1],
-            distance: info[2],
-            duration: info[3],
-            stress: info[4],
-            course: info[5],
-            type: info[6],
-            creationDate: info[7],
-            author: info[8]
+            // distance: info[2],
+            // duration: info[3],
+            // stress: info[4],
+            // course: info[5],
+            // type: info[6],
+            // creationDate: info[7],
+            // author: info[8]
         };
     });
     setInfo = setInfo.map(info => {
@@ -301,8 +320,8 @@ async function dataParser(){
             practiceID: info[0],
             setID: info[1],
             title: info[2],
-            distance: info[3],
-            duration: info[4],
+            // distance: info[3],
+            // duration: info[4],
             rounds: info[5]
         };
     });
@@ -313,19 +332,19 @@ async function dataParser(){
             exerciseID: info[2],
             reps: info[3],
             distance: info[4],
-            interval: info[5],
+            // interval: info[5],
             energy: info[6],
             type: info[7],
             stroke: info[8],
-            pace: info[9],
-            notes: info[10]
+            // pace: info[9],
+            // notes: info[10]
         };
     });
 
     // Write setInfo and practiceInfo to CSV
-    await fastCsv.writeToPath('Data/Training/practiceInfo.csv', practiceInfo, { headers: true, delimiter: '|' });
-    await fastCsv.writeToPath('Data/Training/setInfo.csv', setInfo, { headers: true, delimiter: '|' });
-    await fastCsv.writeToPath('Data/Training/exerciseInfo.csv', exerciseInfo, { headers: true, delimiter: '|' });
+    await fastCsv.writeToPath('Data/Training/practiceInfo.csv', practiceInfo, { headers: true, delimiter: ',' });
+    await fastCsv.writeToPath('Data/Training/setInfo.csv', setInfo, { headers: true, delimiter: ',' });
+    await fastCsv.writeToPath('Data/Training/exerciseInfo.csv', exerciseInfo, { headers: true, delimiter: ',' });
 }
 
 function convertToSeconds(time) {

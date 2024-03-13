@@ -1,10 +1,10 @@
-practiceID|title|distance|duration|stress|course|type|creationDate|author
-0|Sprint|5200|7020|127|SCY|In pool|10/05/2023|Joseph Myhre
-1|Untitled|5050|6550|109|SCY|In pool|10/05/2023|Joseph Myhre
-2|Distance|8000|6840|338|SCY|In pool|10/06/2023|Tim E Lewarchick
-3|Test Set|4825|6600|130|SCY|In pool|10/06/2023|Joseph Myhre
-4|Distance|6920|7020|258|SCY|In pool|10/08/2023|Tim E Lewarchick
-5|Sprint And Mid|6500|6820|150|SCY|In pool|10/08/2023|Joseph Myhre
-6|Fly/Br|4480|6840|124|SCY|In pool|10/10/2023|Tim E Lewarchick
-7|Free/Back|5800|6900|228|SCY|In pool|10/10/2023|Joseph Myhre
-8|Mid Distance|3300|4410|120|SCY|In pool|10/10/2023|Joseph Myhre
+practiceID,title
+0,Sprint
+1,Untitled
+2,Distance
+3,Test Set
+4,Distance
+5,Sprint And Mid
+6,Fly/Br
+7,Free/Back
+8,Mid Distance

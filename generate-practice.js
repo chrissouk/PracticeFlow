@@ -17,7 +17,7 @@ async function generatePractice() {
     const batchSize = 32;
 
     // Read the practice plan text from a file
-    const source = 'test-data.txt';
+    const source = 'Data/Training/test-data.txt';
     
     let practicePlanText = '';
     try {

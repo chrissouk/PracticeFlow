@@ -16,7 +16,8 @@ app.use(cors({
     methods: ['GET', 'POST'],
     credentials: false,
     maxAge: 3600
-  }));
+}));
+app.use('/Models', express.static('Models'));
 
 app.get('/generate-practice', async (request, response) => {
     const practice = await generatePractice();
