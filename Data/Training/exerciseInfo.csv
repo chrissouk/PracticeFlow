@@ -1,4 +1,4 @@
-npmpracticeID,setID,exerciseID,reps,distance,energy,type,stroke
+practiceID,setID,exerciseID,reps,distance,energy,type,stroke
 0,0,0,1,1000,EN1,WU,CH1
 0,1,0,3,75,EN1,D,CH1
 0,1,1,3,25,EN3,S,CH1
