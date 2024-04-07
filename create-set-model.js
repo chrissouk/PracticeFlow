@@ -2,6 +2,7 @@ const fs = require('fs');
 const csv = require('csv-parser');
 const tf = require('@tensorflow/tfjs-node');
 const natural = require('natural');
+const path = require('path');
 
 const tokenizer = new natural.WordTokenizer();
 
@@ -60,6 +61,12 @@ async function calculateVocabSizeAndTokenize() {
     });
 
     const vocabSize = uniqueTokens.size;
+
+    // Convert the Set to an array and map each token to its index
+    const tokenIndexMap = Array.from(uniqueTokens).map((key, value) => ({ key, value }));
+    // Save the tokenIndexMap to a file
+    fs.writeFileSync(path.join('./Models/V3-RealData/', 'uniqueTokens.json'), JSON.stringify(tokenIndexMap, null, 2));
+
     return { vocabSize, uniqueTokens };
 }
 
@@ -156,7 +163,10 @@ async function createSetModel() {
             maxYLength = data.maxSetTitleLength;
         });
 
-    // console.log(`${getArrayDimensions(X)} ${getArrayDimensions(Y)}`);
+    // save maxXLength
+    fs.writeFileSync(path.join(__dirname, 'Models/V3-RealData/maxXLength.json'), JSON.stringify({ maxXLength }));
+
+    console.log(`${getArrayDimensions(X)} ${getArrayDimensions(Y)}`);
 
     // Define the model architecture
     const model = tf.sequential();
@@ -176,14 +186,14 @@ async function createSetModel() {
     // Compile
     model.compile({optimizer: 'adam', loss: 'categoricalCrossentropy'});
 
-    console.log(X);
     // Convert X and Y to tensors
     const XTensor = tf.tensor2d(X);
     const YTensor = tf.tensor2d(Y);
+    console.log(XTensor);
 
     // Train the model
     try {
-        await model.fit(XTensor, YTensor, { epochs: 200, batchSize: 1 });
+        await model.fit(XTensor, YTensor, { epochs: 500, batchSize: 4 });
     } catch (error) {
         console.error('There was a problem training the model:', error);
     }
