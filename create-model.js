@@ -59,6 +59,7 @@ async function createModel() {
     const X = [];
     const Y = [];
 
+    // popoulate arrays with tokenized values
     for (let i = 0; i < practicePlans.length; i++) {
         const practicePlan = practicePlans[i];
         const tokenizedPlan = tokenizer.tokenize(practicePlan);
@@ -68,7 +69,7 @@ async function createModel() {
             Y.push(wordIndex[tokenizedPlan[j + inputLength]]);
         }
     }
-    
+     
     // convert data to tensors
     let XTensor;
     if (X.length > 0) {

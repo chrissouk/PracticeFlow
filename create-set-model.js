@@ -7,7 +7,7 @@ const path = require('path');
 const tokenizer = new natural.WordTokenizer();
 
 /* debugging */
-function getArrayDimensions(arr) {
+function arrayDims(arr) {
     if (!Array.isArray(arr)) {
         return 0; // If the input is not an array, it has 0 dimensions
     }
@@ -20,7 +20,7 @@ function getArrayDimensions(arr) {
     // Otherwise, find the maximum depth of nested arrays
     let maxDepth = 0;
     for (let i = 0; i < arr.length; i++) {
-        const depth = getArrayDimensions(arr[i]);
+        const depth = arrayDims(arr[i]);
         if (depth > maxDepth) {
             maxDepth = depth;
         }
@@ -29,7 +29,7 @@ function getArrayDimensions(arr) {
     return maxDepth + 1; // Add 1 to account for the current level of nesting
 }
 
-// Function to read and parse a CSV file
+// load csv files
 async function readCSV(filePath) {
     const data = [];
     return new Promise((resolve, reject) => {
@@ -47,105 +47,122 @@ async function readCSV(filePath) {
     });
 }
 
-async function calculateVocabSizeAndTokenize() {
-    const practices = await readCSV('Data/Training/practiceInfo.csv');
-    const sets = await readCSV('Data/Training/setInfo.csv');
 
-    const allTextData = practices.map(practice => practice.title)
-        .concat(sets.map(set => set.title));
+async function createVocab() {
+    const practiceData = await readCSV('Data/Training/practiceInfo.csv');
+    const setData = await readCSV('Data/Training/setInfo.csv');
 
-    const uniqueTokens = new Set();
-    allTextData.forEach(text => {
+    const corpus = practiceData.map(practice => practice.title.toLowerCase())
+        .concat(setData.map(set => set.title.toLowerCase()));
+
+    const vocab = new Set();             // add null token for 0 value, make a working joiningString, consolidate functions and clean this up so you can understand it
+    
+    vocab.add("NULL");
+
+    vocab.add("PRACTICETITLE");
+    vocab.add("SETTITLE");    
+    vocab.add("EXERCISETITLE");
+    vocab.add("STOP");
+
+    corpus.forEach(text => {
         const tokens = tokenizer.tokenize(text);
-        tokens.forEach(token => uniqueTokens.add(token));
+        tokens.forEach(token => vocab.add(token));
     });
 
-    const vocabSize = uniqueTokens.size;
-
     // Convert the Set to an array and map each token to its index
-    const tokenIndexMap = Array.from(uniqueTokens).map((key, value) => ({ key, value }));
+    const tokenIndexMap = Array.from(vocab).map((key, value) => ({ key, value }));
     // Save the tokenIndexMap to a file
-    fs.writeFileSync(path.join('./Models/V3-RealData/', 'uniqueTokens.json'), JSON.stringify(tokenIndexMap, null, 2));
+    fs.writeFileSync(path.join('./Models/V3-RealData/', 'vocab.json'), JSON.stringify(tokenIndexMap, null, 2));
 
-    return { vocabSize, uniqueTokens };
+    return vocab;
 }
 
-// assign each unique token with an integer
-function encodeText(text, uniqueTokens) {
-    // Tokenize the text string
+// assign each unique token with its integer representation
+function encodeText(text, vocab, tokenLabel) {
+    console.log(typeof(text));
+
     const tokens = tokenizer.tokenize(text);
 
-    // Initialize an array to hold the encoded integers for each token
-    let encodedTokens = [];
+    // Initialize an array to hold the encoded integers for each token, plus initialize the start token
+    let tokenizedText = [];
+    tokenizedText.push(Array.from(vocab).indexOf(tokenLabel));
 
-    // Iterate over each token
+    // remap tokens as integer representations
     tokens.forEach(token => {
-        // Find the index of the token in the uniqueTokens set
-        const index = Array.from(uniqueTokens).indexOf(token);
-        if (index !== -1) {
-            // Add the index (encoded integer) to the array
-            encodedTokens.push(index + 1);
+        const value = Array.from(vocab).indexOf(token);
+        if (value !== -1) {
+            tokenizedText.push(value);
         }
     });
 
     // Return the array of encoded integers
-    return encodedTokens;
+    return tokenizedText;
 }
 
 // pad titles
-async function padTitles(titles) {
+async function pad(arr, vocab) {
     // Step 1: Find the length of the longest inner array
-    const maxLength = Math.max(...titles.map(title => title.length));
+    const maxLength = Math.max(...arr.map(item => item.length));
 
-    // Step 2: Pad each inner array with zeros to match the length of the longest inner array
-    const paddedTitles = titles.map(title => {
-        // Create a new array with the same elements as the inner array
-        const paddedTitle = [...title];
-        // Calculate how many zeros need to be added
-        const paddingLength = maxLength - title.length;
-        // Add the required number of zeros to the end of the array
-        for (let i = 0; i < paddingLength; i++) {
-            paddedTitle.push(0);
-        }
-        return paddedTitle;
+    // Step 2: Pad each inner array with zeros at the beginning to match the length of the longest inner array
+    const paddedArray = arr.map(item => {
+        // Calculate how many zeros need to be added at the beginning
+        const paddingLength = maxLength - item.length;
+        // Create an array filled with zeros of the required length
+        const padding = new Array(paddingLength).fill(0);
+        // Concatenate the padding array with the original title array
+        const paddedItem = padding.concat(item);
+
+        return paddedItem;
     });
-    
-    return {paddedTitles, maxLength};
+
+    return paddedArray;
 }
 
 // Function to preprocess hierarchical data
-async function preprocessData(vocabSize, uniqueTokens) {
-    const practices = await readCSV('Data/Training/practiceInfo.csv');
-    const sets = await readCSV('Data/Training/setInfo.csv');
+async function preprocessData(vocab) {
+    const practiceData = await readCSV('Data/Training/practiceInfo.csv');
+    const setData = await readCSV('Data/Training/setInfo.csv');
 
     // Associate practices with sets and sets with exercises
-    const practiceSets = practices.map(practice => ({
+    const practiceSets = practiceData.map(practice => ({
         ...practice,
-        sets: sets.filter(set => set.practiceID === practice.practiceID)
+        sets: setData.filter(set => set.practiceID === practice.practiceID)
     }));
 
-    // Flatten the hierarchy into a sequence of exercises for each practice
-    const practiceExerciseSequences = practiceSets.map(practice => ({
-        practiceTitle: practice.title,
-        setTitles: practice.sets.map(set => set.title)
+    const titles = practiceSets.map(practice => ({
+        practiceTitle: practice.title.toLowerCase(),
+        setTitles: practice.sets.map(set => set.title.toLowerCase())
     }));
 
-    const encodedPracticeTitles = practiceExerciseSequences.map(seq => encodeText(seq.practiceTitle, uniqueTokens, vocabSize));
-    const encodedSetTitles = practiceExerciseSequences.map(seq => encodeText(seq.setTitles.join('|'), uniqueTokens, vocabSize));
+    const encodedPracticeTitles = titles.map(seq => encodeText(seq.practiceTitle, vocab, "PRACTICETITLE"));
+    const encodedSetTitles = titles.map(seq => encodeText(seq.setTitles.join('|'), vocab, "SETTITLE"));
 
-    // pad titles
-    let practiceTitles, maxPracticeTitleLength;
-    await padTitles(encodedPracticeTitles).then(data => {
-        practiceTitles = data.paddedTitles;
-        maxPracticeTitleLength = data.maxLength;
-    });
-    let setTitles, maxSetTitleLength;
-    await padTitles(encodedSetTitles).then(data => {
-        setTitles = data.paddedTitles;
-        maxSetTitleLength = data.maxLength;
+    // Combine encoded practice titles with their corresponding encoded set titles
+    const combinedTitles = encodedPracticeTitles.map((practiceTitle, index) => {
+        return practiceTitle.concat(encodedSetTitles[index]);
     });
 
-    return { practiceTitles, maxPracticeTitleLength, setTitles, maxSetTitleLength };
+    let nGrams = [];
+    for (let i = 0; i < combinedTitles.length; i++) {
+        for (let j = 1; j < combinedTitles[i].length; j++) {
+            nGrams.push(combinedTitles[i].slice(0, j + 1))
+        }
+    }
+
+    const features = await pad(nGrams.map(nGram => nGram.slice(0,-1)), vocab);
+    const labels = nGrams.map(nGram => nGram.slice(-1)).flat();
+    const labelProbabilityDistributions = labels.map(labelValue => {
+        let probabilityDistribution = new Array(vocab.size).fill(0);
+        probabilityDistribution[labelValue] = 1;
+        return probabilityDistribution
+    });
+
+    const maxFeatureLength = Math.max(...features.map(feature => feature.length));
+    const maxLabelLength = vocab.size;
+
+    return { features, maxFeatureLength, labelProbabilityDistributions, maxLabelLength }
+
 }
 
 async function createSetModel() {
@@ -153,20 +170,20 @@ async function createSetModel() {
     let X, Y, maxXLength, maxYLength;
 
     // get vocabSize and uniqueTokens
-    const { vocabSize, uniqueTokens } = await calculateVocabSizeAndTokenize();
+    const vocab = await createVocab();
 
     // Preprocess hierarchical data
-    await preprocessData(vocabSize, uniqueTokens).then(data => {
-            X = data.practiceTitles;
-            maxXLength = data.maxPracticeTitleLength;
-            Y = data.setTitles;
-            maxYLength = data.maxSetTitleLength;
+    await preprocessData(vocab).then(data => {
+            X = data.features;
+            maxXLength = data.maxFeatureLength;
+            Y = data.labelProbabilityDistributions;
+            maxYLength = data.maxLabelLength;
         });
 
     // save maxXLength
     fs.writeFileSync(path.join(__dirname, 'Models/V3-RealData/maxXLength.json'), JSON.stringify({ maxXLength }));
 
-    console.log(`${getArrayDimensions(X)} ${getArrayDimensions(Y)}`);
+    console.log(`${arrayDims(X)} ${arrayDims(Y)}`);
 
     // Define the model architecture
     const model = tf.sequential();
@@ -176,24 +193,35 @@ async function createSetModel() {
     const lstmUnits = 128;
 
     // create layers
-    model.add(tf.layers.embedding({inputDim: vocabSize, 
+    model.add(tf.layers.embedding({inputDim: vocab.size, 
                                    outputDim: embeddingDim, 
-                                   inputLength: maxXLength}));                          // embedding
-    model.add(tf.layers.lstm({units: lstmUnits, returnSequences: true}));               // encoding
-    model.add(tf.layers.lstm({units: lstmUnits}));                                      // decoding
-    model.add(tf.layers.dense({units: maxYLength, activation: 'softmax'}));             // output
+                                   inputLength: maxXLength}));
+    model.add(tf.layers.lstm({units: lstmUnits}));
+    model.add(tf.layers.dense({units: vocab.size, activation: 'softmax'}));
 
     // Compile
     model.compile({optimizer: 'adam', loss: 'categoricalCrossentropy'});
+    model.summary();
 
     // Convert X and Y to tensors
     const XTensor = tf.tensor2d(X);
     const YTensor = tf.tensor2d(Y);
-    console.log(XTensor);
+
+    // early stoping
+    const earlyStoppingCallback = tf.callbacks.earlyStopping({
+        monitor: 'val_loss',
+        patience: 5, // Stop training if there's no improvement in validation loss for 5 epochs
+        minDelta: 0.001, // Consider an improvement if the validation loss decreases by at least 0.001
+       });
 
     // Train the model
     try {
-        await model.fit(XTensor, YTensor, { epochs: 500, batchSize: 4 });
+        await model.fit(XTensor, YTensor, {
+            epochs: 500,
+            batchSize: 4,
+            validationSplit: 0.2,
+            callbacks: [earlyStoppingCallback]
+        });
     } catch (error) {
         console.error('There was a problem training the model:', error);
     }
