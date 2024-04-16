@@ -189,14 +189,15 @@ async function createSetModel() {
     const model = tf.sequential();
 
     // Define hyperparameters
-    const embeddingDim = 128;
-    const lstmUnits = 128;
+    const embeddingDim = 10;
+    const lstmUnits = 10;
 
     // create layers
     model.add(tf.layers.embedding({inputDim: vocab.size, 
                                    outputDim: embeddingDim, 
                                    inputLength: maxXLength}));
     model.add(tf.layers.lstm({units: lstmUnits}));
+    model.add(tf.layers.dropout({rate: 0.1}))
     model.add(tf.layers.dense({units: vocab.size, activation: 'softmax'}));
 
     // Compile
