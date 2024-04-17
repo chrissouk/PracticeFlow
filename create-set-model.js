@@ -55,7 +55,7 @@ async function createVocab() {
     const corpus = practiceData.map(practice => practice.title.toLowerCase())
         .concat(setData.map(set => set.title.toLowerCase()));
 
-    const vocab = new Set();             // add null token for 0 value, make a working joiningString, consolidate functions and clean this up so you can understand it
+    const vocab = new Set();
     
     vocab.add("NULL");
 
@@ -79,7 +79,6 @@ async function createVocab() {
 
 // assign each unique token with its integer representation
 function encodeText(text, vocab, tokenLabel) {
-    console.log(typeof(text));
 
     const tokens = tokenizer.tokenize(text);
 
@@ -119,8 +118,7 @@ async function pad(arr, vocab) {
     return paddedArray;
 }
 
-// Function to preprocess hierarchical data
-async function preprocessData(vocab) {
+async function createFeaturesAndLabels(vocab) {
     const practiceData = await readCSV('Data/Training/practiceInfo.csv');
     const setData = await readCSV('Data/Training/setInfo.csv');
 
@@ -161,38 +159,48 @@ async function preprocessData(vocab) {
     const maxFeatureLength = Math.max(...features.map(feature => feature.length));
     const maxLabelLength = vocab.size;
 
+    // save maxXLength
+    fs.writeFileSync(path.join(__dirname, 'Models/V3-RealData/maxXLength.json'), JSON.stringify({ maxFeatureLength }));
+
     return { features, maxFeatureLength, labelProbabilityDistributions, maxLabelLength }
 
 }
 
-async function createSetModel() {
-    // declare features and labels
-    let X, Y, maxXLength, maxYLength;
 
-    // get vocabSize and uniqueTokens
+
+
+
+
+// MAIN
+
+async function createSetModel() {
+
+    /* < FEATURES & LABELS > */
+
+    let X, Y, maxXLength, maxYLength;
+    
     const vocab = await createVocab();
 
-    // Preprocess hierarchical data
-    await preprocessData(vocab).then(data => {
+    await createFeaturesAndLabels(vocab).then(data => {
             X = data.features;
             maxXLength = data.maxFeatureLength;
             Y = data.labelProbabilityDistributions;
             maxYLength = data.maxLabelLength;
         });
 
-    // save maxXLength
-    fs.writeFileSync(path.join(__dirname, 'Models/V3-RealData/maxXLength.json'), JSON.stringify({ maxXLength }));
+    // Convert X and Y to tensors
+    const XTensor = tf.tensor2d(X);
+    const YTensor = tf.tensor2d(Y);
 
-    console.log(`${arrayDims(X)} ${arrayDims(Y)}`);
 
-    // Define the model architecture
-    const model = tf.sequential();
+    /* < MODEL > */
 
     // Define hyperparameters
     const embeddingDim = 10;
     const lstmUnits = 10;
 
-    // create layers
+    // construct model architecture
+    const model = tf.sequential();
     model.add(tf.layers.embedding({inputDim: vocab.size, 
                                    outputDim: embeddingDim, 
                                    inputLength: maxXLength}));
@@ -204,16 +212,15 @@ async function createSetModel() {
     model.compile({optimizer: 'adam', loss: 'categoricalCrossentropy'});
     model.summary();
 
-    // Convert X and Y to tensors
-    const XTensor = tf.tensor2d(X);
-    const YTensor = tf.tensor2d(Y);
-
     // early stoping
     const earlyStoppingCallback = tf.callbacks.earlyStopping({
         monitor: 'val_loss',
         patience: 5, // Stop training if there's no improvement in validation loss for 5 epochs
         minDelta: 0.001, // Consider an improvement if the validation loss decreases by at least 0.001
        });
+
+
+    /* < TRAIN & SAVE > */
 
     // Train the model
     try {

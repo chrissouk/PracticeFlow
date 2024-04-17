@@ -109,7 +109,6 @@ async function generateNextToken(model, tokens) {
 async function main() {
     const model = await loadModel();
 
-    // Example practice titles
     const practiceTitle = 'Sprint';
 
     let tokens = [];
