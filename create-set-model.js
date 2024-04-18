@@ -78,13 +78,13 @@ async function createVocab() {
 }
 
 // assign each unique token with its integer representation
-function encodeText(text, vocab, tokenLabel) {
+function encode(text, vocab, textLabel) {
 
     const tokens = tokenizer.tokenize(text);
 
     // Initialize an array to hold the encoded integers for each token, plus initialize the start token
     let tokenizedText = [];
-    tokenizedText.push(Array.from(vocab).indexOf(tokenLabel));
+    tokenizedText.push(Array.from(vocab).indexOf(textLabel));
 
     // remap tokens as integer representations
     tokens.forEach(token => {
@@ -118,29 +118,41 @@ async function pad(arr, vocab) {
     return paddedArray;
 }
 
-async function createFeaturesAndLabels(vocab) {
+// MAIN
+
+async function createSetModel() {
+
+    /* < FEATURES & LABELS > */
+    
+    const vocab = await createVocab();
+
     const practiceData = await readCSV('Data/Training/practiceInfo.csv');
     const setData = await readCSV('Data/Training/setInfo.csv');
 
-    // Associate practices with sets and sets with exercises
+    // TURN CSV DATA INTO LIST OF PRACTICES
+
+    // group by practice
     const practiceSets = practiceData.map(practice => ({
         ...practice,
         sets: setData.filter(set => set.practiceID === practice.practiceID)
     }));
 
-    const titles = practiceSets.map(practice => ({
+    // extract all titles in each practice
+    const titlesObject = practiceSets.map(practice => ({
         practiceTitle: practice.title.toLowerCase(),
         setTitles: practice.sets.map(set => set.title.toLowerCase())
     }));
 
-    const encodedPracticeTitles = titles.map(seq => encodeText(seq.practiceTitle, vocab, "PRACTICETITLE"));
-    const encodedSetTitles = titles.map(seq => encodeText(seq.setTitles.join('|'), vocab, "SETTITLE"));
-
+    // encode by tokenizing, inserting id tokens, and converting tokens to integers
+    const encodedPracticeTitles = titlesObject.map(practice => encode(practice.practiceTitle, vocab, "PRACTICETITLE"));
+    const encodedSetTitles = titlesObject.map(practice => practice.setTitles.map(setTitle => encode(setTitle, vocab, "SETTITLE")));
+    
     // Combine encoded practice titles with their corresponding encoded set titles
-    const combinedTitles = encodedPracticeTitles.map((practiceTitle, index) => {
-        return practiceTitle.concat(encodedSetTitles[index]);
-    });
+    const combinedTitles = encodedPracticeTitles.map((practiceTitle, index) => practiceTitle.concat(encodedSetTitles[index].flat()));
 
+    console.log(combinedTitles);
+
+    // create ngrams
     let nGrams = [];
     for (let i = 0; i < combinedTitles.length; i++) {
         for (let j = 1; j < combinedTitles[i].length; j++) {
@@ -149,48 +161,24 @@ async function createFeaturesAndLabels(vocab) {
     }
 
     const features = await pad(nGrams.map(nGram => nGram.slice(0,-1)), vocab);
-    const labels = nGrams.map(nGram => nGram.slice(-1)).flat();
-    const labelProbabilityDistributions = labels.map(labelValue => {
+
+    // take the last element of every ngram
+    const labelIntegers = nGrams.map(nGram => nGram.slice(-1)).flat();
+    // one hot encode the integers to represent probability distributions
+    const labels = labelIntegers.map(labelValue => {
         let probabilityDistribution = new Array(vocab.size).fill(0);
         probabilityDistribution[labelValue] = 1;
         return probabilityDistribution
     });
 
-    const maxFeatureLength = Math.max(...features.map(feature => feature.length));
-    const maxLabelLength = vocab.size;
+    const maxXLength = Math.max(...features.map(feature => feature.length));
 
     // save maxXLength
-    fs.writeFileSync(path.join(__dirname, 'Models/V3-RealData/maxXLength.json'), JSON.stringify({ maxFeatureLength }));
-
-    return { features, maxFeatureLength, labelProbabilityDistributions, maxLabelLength }
-
-}
-
-
-
-
-
-
-// MAIN
-
-async function createSetModel() {
-
-    /* < FEATURES & LABELS > */
-
-    let X, Y, maxXLength, maxYLength;
-    
-    const vocab = await createVocab();
-
-    await createFeaturesAndLabels(vocab).then(data => {
-            X = data.features;
-            maxXLength = data.maxFeatureLength;
-            Y = data.labelProbabilityDistributions;
-            maxYLength = data.maxLabelLength;
-        });
+    fs.writeFileSync(path.join(__dirname, 'Models/V3-RealData/maxXLength.json'), JSON.stringify({ maxXLength }));
 
     // Convert X and Y to tensors
-    const XTensor = tf.tensor2d(X);
-    const YTensor = tf.tensor2d(Y);
+    const XTensor = tf.tensor2d(features);
+    const YTensor = tf.tensor2d(labels);
 
 
     /* < MODEL > */
@@ -215,7 +203,7 @@ async function createSetModel() {
     // early stoping
     const earlyStoppingCallback = tf.callbacks.earlyStopping({
         monitor: 'val_loss',
-        patience: 5, // Stop training if there's no improvement in validation loss for 5 epochs
+        patience: 1, // Stop training if there's no improvement in validation loss for 5 epochs
         minDelta: 0.001, // Consider an improvement if the validation loss decreases by at least 0.001
        });
 

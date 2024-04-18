@@ -46,13 +46,12 @@ async function loadModel() {
 }
 
 // assign each unique token with its integer representation
-function encodeText(text, tokenLabel) {
+function encode(text) {
 
     const tokens = tokenizer.tokenize(text);
 
     // Initialize an array to hold the encoded integers for each token, plus initialize the start token
     let tokenizedText = [];
-    tokenizedText.push(Array.from(vocab).indexOf(tokenLabel));
 
     // remap tokens as integer representations
     tokens.forEach(token => {
@@ -69,7 +68,6 @@ function encodeText(text, tokenLabel) {
 async function pad(arr) {
 
     // Step 2: Pad each inner array with zeros at the beginning to match the length of the longest inner array
-
     const paddingLength = maxXLength - arr.length;
     const padding = new Array(paddingLength).fill(0);
     const paddedItem = padding.concat(arr);
@@ -78,10 +76,11 @@ async function pad(arr) {
 }
 
 // Generate set titles
-async function generateNextToken(model, tokens) {
+async function generateNextToken(model, text) {
     // Preprocess practice titles
-    const encodedInput = encodeText(tokens, tokens[0]);
+    const encodedInput = encode(text);
     const paddedInput = await pad(encodedInput);
+    console.log(paddedInput);
 
     // Convert to tensor
     const inputTensor = tf.tensor2d(paddedInput, [1, maxXLength]);
@@ -90,7 +89,7 @@ async function generateNextToken(model, tokens) {
     const predictions = model.predict(inputTensor).dataSync();
     console.log(predictions);
 
-    // find integer representation of chosen token
+    // find chosen token index
     let chosenTokenProbability = predictions[0];
     let chosenTokenIndex = 0;
     for (let i = 0; i < predictions.length; i++) {
@@ -100,9 +99,11 @@ async function generateNextToken(model, tokens) {
         }
     }
 
-    console.log(chosenTokenIndex);
+    // decode chosenToken
+    let vocabArray = Array.from(vocab);
+    let chosenToken = vocabArray[chosenTokenIndex];
 
-    return chosenTokenIndex;
+    return chosenToken;
 }
 
 // Main function
@@ -112,25 +113,17 @@ async function main() {
     const practiceTitle = 'Sprint';
 
     let tokens = [];
-    tokens.push(Array.from(vocab).indexOf("PRACTICETITLE"));
-    tokens.push(Array.from(vocab).indexOf(practiceTitle.toLowerCase()));
+    tokens.push("PRACTICETITLE");
+    tokens.push(practiceTitle.toLowerCase());
 
     let sequenceLength = 10;
     for (let i = 0; i < sequenceLength; i++) {
-        let token;
-        token = await generateNextToken(model, tokens.join(' '));
-        tokens.push(token);
-    }
-    
-    let setTitles = [];
-    for (let i = 0; i < tokens.length; i++) {
-        let token = tokens[i];
-        let vocabArray = Array.from(vocab);
-        let setTitle = vocabArray[token];
-        setTitles.push(setTitle);
+        console.log(tokens.join(' '));
+        let newToken = await generateNextToken(model, tokens.join(' '));
+        tokens.push(newToken);
     }
 
-    console.log(setTitles);
+    console.log(tokens);
 
 }
 
