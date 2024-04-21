@@ -1,99 +1,279 @@
+const fs = require('fs');
+const csv = require('csv-parser');
 const tf = require('@tensorflow/tfjs-node');
 const natural = require('natural');
-const fs = require('fs');
+const path = require('path');
 
-async function createModel() {
-    // initialize new tokenizer
-    const tokenizer = new natural.WordTokenizer();
+const tokenizer = new natural.WordTokenizer();
 
-    // initialize variables
-    const inputLength = 5;
-    const numEpochs = 100;
-    const batchSize = 32;
+/* debugging */
+function arrayDims(arr) {
+    if (!Array.isArray(arr)) {
+        return 0; // If the input is not an array, it has 0 dimensions
+    }
 
-    // Read the practice plan text from a file
-    const source = 'test-data.txt';
+    // If the array is empty, it has 1 dimension
+    if (arr.length === 0) {
+        return 1;
+    }
+
+    // Otherwise, find the maximum depth of nested arrays
+    let maxDepth = 0;
+    for (let i = 0; i < arr.length; i++) {
+        const depth = arrayDims(arr[i]);
+        if (depth > maxDepth) {
+            maxDepth = depth;
+        }
+    }
+
+    return maxDepth + 1; // Add 1 to account for the current level of nesting
+}
+
+// load csv files
+async function readCSV(filePath) {
+    const data = [];
+    return new Promise((resolve, reject) => {
+        fs.createReadStream(filePath)
+            .pipe(csv())
+            .on('data', (row) => {
+                data.push(row);
+            })
+            .on('end', () => {
+                resolve(data);
+            })
+            .on('error', (error) => {
+                reject(error);
+            });
+    });
+}
+
+
+async function createVocab() {
+    const practiceCSV = await readCSV('Data/Training/practiceInfo.csv');
+    const setCSV = await readCSV('Data/Training/setInfo.csv');
+    const exerciseCSV = await readCSV('Data/Training/exerciseInfo.csv');
+
+    const corpus = practiceCSV.map(practice => practice.title.toLowerCase())
+        .concat(setCSV.map(set => set.title.toLowerCase()))
+        .concat(setCSV.map(set => set.rounds))
+        .concat(exerciseCSV.map(exercise => exercise.reps))
+        .concat(exerciseCSV.map(exercise => exercise.distance))
+        .concat(exerciseCSV.map(exercise => exercise.energy.toLowerCase()))
+        .concat(exerciseCSV.map(exercise => exercise.type.toLowerCase()))
+        .concat(exerciseCSV.map(exercise => exercise.stroke.toLowerCase()))
+
+    const vocab = new Set();
     
-    let practicePlanText = '';
-    try {
-        practicePlanText = await fs.promises.readFile(source, 'utf8');
-    } catch (error) {
-        console.error(`There was a problem reading the file at ${source}:`, error);
-    }
+    vocab.add("NULL");
 
-    let tokenized;
-    try {
-        tokenized = tokenizer.tokenize(practicePlanText);
-    } catch (error) {
-        console.error('There was a problem tokenizing the text:', error);
-    }
+    vocab.add("PRACTICETITLE");
+    vocab.add("SETTITLE");
+    vocab.add("SETROUNDS");
 
-    // Build vocabulary and update 'numWords'
-    const wordIndex = {};
-    const indexToWord = {};
-    let wordCounter = 0;
+    vocab.add("EXERCISEREPS");
+    vocab.add("EXERCISEDISTANCE");
+    vocab.add("EXERCISEENERGY");
+    vocab.add("EXERCISETYPE");
+    vocab.add("EXERCISESTROKE");
+    
+    vocab.add("STOP");
 
-    tokenized.forEach((word) => {
-        if (!wordIndex[word]) {
-            wordCounter++;
-            wordIndex[word] = wordCounter;
-            indexToWord[wordCounter] = word;
+    corpus.forEach(text => {
+        const tokens = tokenizer.tokenize(text);
+        tokens.forEach(token => vocab.add(token));
+    });
+
+    // Convert the Set to an array and map each token to its index
+    const tokenIndexMap = Array.from(vocab).map((key, value) => ({ key, value }));
+    // Save the tokenIndexMap to a file
+    fs.writeFileSync(path.join('./Models/V4-PreMassData/', 'vocab.json'), JSON.stringify(tokenIndexMap, null, 2));
+
+    return vocab;
+}
+
+// assign each unique token with its integer representation
+function encode(text, vocab, textLabel) {
+    const tokens = tokenizer.tokenize(text);
+
+    // Initialize an array to hold the encoded integers for each token, plus initialize the start token
+    let tokenizedText = [];
+    tokenizedText.push(Array.from(vocab).indexOf(textLabel));
+
+    // remap tokens as integer representations
+    tokens.forEach(token => {
+        const value = Array.from(vocab).indexOf(token);
+        if (value !== -1) {
+            tokenizedText.push(value);
         }
     });
 
-    let numWords = Object.keys(wordIndex).length + 1; // +1 for the padding token
+    // Return the array of encoded integers
+    return tokenizedText;
+}
 
-    // read test-data.txt and split by line
-    const data = fs.readFileSync(source, 'utf8');
-    const practicePlans = data.split('\n');
+// pad titles
+async function pad(arr, vocab) {
+    // Step 1: Find the length of the longest inner array
+    const maxLength = Math.max(...arr.map(item => item.length));
 
-    // create model
-    const model = tf.sequential();
-    model.add(tf.layers.lstm({units: 128, inputShape: [inputLength, 1]}));
-    model.add(tf.layers.dense({units: numWords, activation: 'softmax'}));
+    // Step 2: Pad each inner array with zeros at the beginning to match the length of the longest inner array
+    const paddedArray = arr.map(item => {
+        // Calculate how many zeros need to be added at the beginning
+        const paddingLength = maxLength - item.length;
+        // Create an array filled with zeros of the required length
+        const padding = new Array(paddingLength).fill(0);
+        // Concatenate the padding array with the original title array
+        const paddedItem = padding.concat(item);
+
+        return paddedItem;
+    });
+
+    return paddedArray;
+}
+
+// MAIN
+
+async function createSetModel() {
+
+    /* < FEATURES & LABELS > */
     
-    // compile model
-    model.compile({loss: 'categoricalCrossentropy', optimizer: 'adam'});
+    const vocab = await createVocab();
+
+    const practiceCSV = await readCSV('Data/Training/practiceInfo.csv');
+    const setCSV = await readCSV('Data/Training/setInfo.csv');
+    const exerciseCSV = await readCSV('Data/Training/exerciseInfo.csv');
+
+    // TURN CSV DATA INTO LIST OF PRACTICES
+
+    // group exercises by setID
+    const setIDGrouped = setCSV.map(setInfo => ({
+        ...setInfo,
+        exercises: exerciseCSV.filter(exerciseInfo => exerciseInfo.setID === setInfo.setID)
+    }));
+
+    // group sets by practiceID
+    const practiceIDGrouped = practiceCSV.map(practiceInfo => ({
+        ...practiceInfo,
+        sets: setIDGrouped.filter(setInfo => setInfo.practiceID === practiceInfo.practiceID)
+    }));
+   
     
-    // generate training data
-    const X = [];
-    const Y = [];
+    // convert into array of encoded practices
+    const encodedDataArray = practiceIDGrouped.map(practiceInfo => {
+        let encodedDataArray = [];
 
-    // popoulate arrays with tokenized values
-    for (let i = 0; i < practicePlans.length; i++) {
-        const practicePlan = practicePlans[i];
-        const tokenizedPlan = tokenizer.tokenize(practicePlan);
+        let encodedPracticeTitle = encode(practiceInfo.title.toLowerCase(), vocab, "PRACTICETITLE");
+        encodedDataArray.push(encodedPracticeTitle);
 
-        for (let j = 0; j < tokenizedPlan.length - inputLength; j++) {
-            X.push(tokenizedPlan.slice(j, j + inputLength).map(word => wordIndex[word]));
-            Y.push(wordIndex[tokenizedPlan[j + inputLength]]);
+        practiceInfo.sets.forEach(setInfo => {
+            let encodedSetTitle = encode(setInfo.title.toLowerCase(), vocab, "SETTITLE");
+            encodedDataArray.push(encodedSetTitle);
+
+            let encodedSetRounds = encode(setInfo.rounds, vocab, "SETROUNDS");
+            encodedDataArray.push(encodedSetRounds);
+
+            setInfo.exercises.forEach(exerciseInfo => {
+                let encodedExerciseReps = encode(exerciseInfo.reps, vocab, "EXERCISEREPS");
+                encodedDataArray.push(encodedExerciseReps);
+
+                let encodedExerciseDistance = encode(exerciseInfo.distance, vocab, "EXERCISEDISTANCE");
+                encodedDataArray.push(encodedExerciseDistance);
+
+                let encodedExerciseEnergy = encode(exerciseInfo.energy.toLowerCase(), vocab, "EXERCISEENERGY");
+                encodedDataArray.push(encodedExerciseEnergy);
+
+                let encodedExerciseType = encode(exerciseInfo.type.toLowerCase(), vocab, "EXERCISETYPE");
+                encodedDataArray.push(encodedExerciseType);
+
+                let encodedExerciseStroke = encode(exerciseInfo.stroke.toLowerCase(), vocab, "EXERCISESTROKE");
+                encodedDataArray.push(encodedExerciseStroke);
+            });
+        });
+
+        let encodedStopToken = Array.from(vocab).indexOf("STOP");
+        encodedDataArray.push(encodedStopToken);
+
+        return encodedDataArray.flat();
+    });
+
+    // create ngrams
+    let nGrams = [];
+    for (let i = 0; i < encodedDataArray.length; i++) {
+        for (let j = 1; j < encodedDataArray[i].length; j++) {
+            nGrams.push(encodedDataArray[i].slice(0, j + 1));
         }
     }
-     
-    // convert data to tensors
-    let XTensor;
-    if (X.length > 0) {
-        XTensor = tf.tensor2d(X, [X.length, X[0].length]);
-        XTensor = XTensor.expandDims(2);
-    } else {
-        throw new Error("The array X is empty. Unable to create tensor.");
-    }
-    const YTensor = tf.oneHot(tf.tensor1d(Y, 'int32'), numWords);
-    
-    // train model
+
+    const features = await pad(nGrams.map(nGram => nGram.slice(0,-1)), vocab);
+
+    // take the last element of every ngram
+    const labelIntegers = nGrams.map(nGram => nGram.slice(-1)).flat();
+    // one hot encode the integers to represent probability distributions
+    const labels = labelIntegers.map(labelValue => {
+        let probabilityDistribution = new Array(vocab.size).fill(0);
+        probabilityDistribution[labelValue] = 1;
+        return probabilityDistribution;
+    });
+
+    const maxXLength = Math.max(...features.map(feature => feature.length));
+
+    // save maxXLength
+    fs.writeFileSync(path.join(__dirname, 'Models/V4-PreMassData/maxXLength.json'), JSON.stringify({ maxXLength }));
+
+    // Convert X and Y to tensors
+    const XTensor = tf.tensor2d(features);
+    const YTensor = tf.tensor2d(labels);
+
+
+    /* < MODEL > */
+
+    // Define hyperparameters
+    const embeddingDim = 10;
+    const lstmUnits = 10;
+
+    // construct model architecture
+    const model = tf.sequential();
+    model.add(tf.layers.embedding({inputDim: vocab.size, 
+                                   outputDim: embeddingDim, 
+                                   inputLength: maxXLength}));
+    model.add(tf.layers.lstm({units: lstmUnits}));
+    model.add(tf.layers.dropout({rate: 0.1}));
+    model.add(tf.layers.dense({units: vocab.size, activation: 'softmax'}));
+
+    // Compile
+    model.compile({optimizer: 'adam', loss: 'categoricalCrossentropy'});
+    model.summary();
+
+    // early stoping
+    const earlyStoppingCallback = tf.callbacks.earlyStopping({
+        monitor: 'val_loss',
+        patience: 1, // Stop training if there's no improvement in validation loss for n epochs
+        minDelta: 0.001, // Consider an improvement if the validation loss decreases by at least n
+       });
+
+
+    /* < TRAIN & SAVE > */
+
+    // Train the model
     try {
-        await model.fit(XTensor, YTensor, { epochs: numEpochs, batchSize: batchSize });
+        await model.fit(XTensor, YTensor, {
+            epochs: 500,
+            batchSize: 4,
+            validationSplit: 0.2,
+            callbacks: [earlyStoppingCallback]
+        });
     } catch (error) {
         console.error('There was a problem training the model:', error);
     }
 
-    // save model
+    // Save the model
     try {
-        await model.save('file://./Models/V2-Minimizing');
+        await model.save('file://./Models/V4-PreMassData');
     } catch (error) {
         console.error('There was a problem saving the model:', error);
     }
+    
 }
 
 // Call the asynchronous function to start the execution
-createModel().catch(console.error);
+createSetModel().catch(console.error);
