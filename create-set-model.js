@@ -49,19 +49,33 @@ async function readCSV(filePath) {
 
 
 async function createVocab() {
-    const practiceData = await readCSV('Data/Training/practiceInfo.csv');
-    const setData = await readCSV('Data/Training/setInfo.csv');
+    const practiceCSV = await readCSV('Data/Training/practiceInfo.csv');
+    const setCSV = await readCSV('Data/Training/setInfo.csv');
+    const exerciseCSV = await readCSV('Data/Training/exerciseInfo.csv');
 
-    const corpus = practiceData.map(practice => practice.title.toLowerCase())
-        .concat(setData.map(set => set.title.toLowerCase()));
+    const corpus = practiceCSV.map(practice => practice.title.toLowerCase())
+        .concat(setCSV.map(set => set.title.toLowerCase()))
+        .concat(setCSV.map(set => set.rounds))
+        .concat(exerciseCSV.map(exercise => exercise.reps))
+        .concat(exerciseCSV.map(exercise => exercise.distance))
+        .concat(exerciseCSV.map(exercise => exercise.energy.toLowerCase()))
+        .concat(exerciseCSV.map(exercise => exercise.type.toLowerCase()))
+        .concat(exerciseCSV.map(exercise => exercise.stroke.toLowerCase()))
 
     const vocab = new Set();
     
     vocab.add("NULL");
 
     vocab.add("PRACTICETITLE");
-    vocab.add("SETTITLE");    
-    vocab.add("EXERCISETITLE");
+    vocab.add("SETTITLE");
+    vocab.add("SETROUNDS");
+
+    vocab.add("EXERCISEREPS");
+    vocab.add("EXERCISEDISTANCE");
+    vocab.add("EXERCISEENERGY");
+    vocab.add("EXERCISETYPE");
+    vocab.add("EXERCISESTROKE");
+    
     vocab.add("STOP");
 
     corpus.forEach(text => {
@@ -72,14 +86,13 @@ async function createVocab() {
     // Convert the Set to an array and map each token to its index
     const tokenIndexMap = Array.from(vocab).map((key, value) => ({ key, value }));
     // Save the tokenIndexMap to a file
-    fs.writeFileSync(path.join('./Models/V3-RealData/', 'vocab.json'), JSON.stringify(tokenIndexMap, null, 2));
+    fs.writeFileSync(path.join('./Models/V4-PreMassData/', 'vocab.json'), JSON.stringify(tokenIndexMap, null, 2));
 
     return vocab;
 }
 
 // assign each unique token with its integer representation
 function encode(text, vocab, textLabel) {
-
     const tokens = tokenizer.tokenize(text);
 
     // Initialize an array to hold the encoded integers for each token, plus initialize the start token
@@ -126,37 +139,70 @@ async function createSetModel() {
     
     const vocab = await createVocab();
 
-    const practiceData = await readCSV('Data/Training/practiceInfo.csv');
-    const setData = await readCSV('Data/Training/setInfo.csv');
+    const practiceCSV = await readCSV('Data/Training/practiceInfo.csv');
+    const setCSV = await readCSV('Data/Training/setInfo.csv');
+    const exerciseCSV = await readCSV('Data/Training/exerciseInfo.csv');
 
     // TURN CSV DATA INTO LIST OF PRACTICES
 
-    // group by practice
-    const practiceSets = practiceData.map(practice => ({
-        ...practice,
-        sets: setData.filter(set => set.practiceID === practice.practiceID)
+    // group exercises by setID
+    const setIDGrouped = setCSV.map(setInfo => ({
+        ...setInfo,
+        exercises: exerciseCSV.filter(exerciseInfo => exerciseInfo.setID === setInfo.setID)
     }));
+    // console.log(setIDGrouped);
 
-    // extract all titles in each practice
-    const titlesObject = practiceSets.map(practice => ({
-        practiceTitle: practice.title.toLowerCase(),
-        setTitles: practice.sets.map(set => set.title.toLowerCase())
+    // group sets by practiceID
+    const practiceIDGrouped = practiceCSV.map(practiceInfo => ({
+        ...practiceInfo,
+        sets: setIDGrouped.filter(setInfo => setInfo.practiceID === practiceInfo.practiceID)
     }));
-
-    // encode by tokenizing, inserting id tokens, and converting tokens to integers
-    const encodedPracticeTitles = titlesObject.map(practice => encode(practice.practiceTitle, vocab, "PRACTICETITLE"));
-    const encodedSetTitles = titlesObject.map(practice => practice.setTitles.map(setTitle => encode(setTitle, vocab, "SETTITLE")));
+    // console.log(practiceIDGrouped[0].sets[0].exercises);
+   
     
-    // Combine encoded practice titles with their corresponding encoded set titles
-    const combinedTitles = encodedPracticeTitles.map((practiceTitle, index) => practiceTitle.concat(encodedSetTitles[index].flat()));
+    // encode by tokenizing, inserting id tokens, converting tokens to integers, and returning those integers into an array
+    const encodedDataArray = practiceIDGrouped.map(practiceInfo => {
+        let encodedDataArray = [];
+        // console.log(practiceInfo);
 
-    console.log(combinedTitles);
+        let encodedPracticeTitle = encode(practiceInfo.title.toLowerCase(), vocab, "PRACTICETITLE");
+        encodedDataArray.push(encodedPracticeTitle);
+
+        practiceInfo.sets.forEach(setInfo => {
+            // console.log(setInfo);
+            let encodedSetTitle = encode(setInfo.title.toLowerCase(), vocab, "SETTITLE");
+            encodedDataArray.push(encodedSetTitle);
+
+            let encodedSetRounds = encode(setInfo.rounds, vocab, "SETROUNDS");
+            encodedDataArray.push(encodedSetRounds);
+
+            setInfo.exercises.forEach(exerciseInfo => {
+                let encodedExerciseReps = encode(exerciseInfo.reps, vocab, "EXERCISEREPS");
+                encodedDataArray.push(encodedExerciseReps);
+
+                let encodedExerciseDistance = encode(exerciseInfo.distance, vocab, "EXERCISEDISTANCE");
+                encodedDataArray.push(encodedExerciseDistance);
+
+                let encodedExerciseEnergy = encode(exerciseInfo.energy.toLowerCase(), vocab, "EXERCISEENERGY");
+                encodedDataArray.push(encodedExerciseEnergy);
+
+                let encodedExerciseType = encode(exerciseInfo.type.toLowerCase(), vocab, "EXERCISETYPE");
+                encodedDataArray.push(encodedExerciseType);
+
+                let encodedExerciseStroke = encode(exerciseInfo.stroke.toLowerCase(), vocab, "EXERCISESTROKE");
+                encodedDataArray.push(encodedExerciseStroke);
+            });
+        });
+
+        return encodedDataArray.flat();
+    });
+    console.log(encodedDataArray);
 
     // create ngrams
     let nGrams = [];
-    for (let i = 0; i < combinedTitles.length; i++) {
-        for (let j = 1; j < combinedTitles[i].length; j++) {
-            nGrams.push(combinedTitles[i].slice(0, j + 1))
+    for (let i = 0; i < encodedDataArray.length; i++) {
+        for (let j = 1; j < encodedDataArray[i].length; j++) {
+            nGrams.push(encodedDataArray[i].slice(0, j + 1));
         }
     }
 
@@ -168,13 +214,13 @@ async function createSetModel() {
     const labels = labelIntegers.map(labelValue => {
         let probabilityDistribution = new Array(vocab.size).fill(0);
         probabilityDistribution[labelValue] = 1;
-        return probabilityDistribution
+        return probabilityDistribution;
     });
 
     const maxXLength = Math.max(...features.map(feature => feature.length));
 
     // save maxXLength
-    fs.writeFileSync(path.join(__dirname, 'Models/V3-RealData/maxXLength.json'), JSON.stringify({ maxXLength }));
+    fs.writeFileSync(path.join(__dirname, 'Models/V4-PreMassData/maxXLength.json'), JSON.stringify({ maxXLength }));
 
     // Convert X and Y to tensors
     const XTensor = tf.tensor2d(features);
@@ -193,7 +239,7 @@ async function createSetModel() {
                                    outputDim: embeddingDim, 
                                    inputLength: maxXLength}));
     model.add(tf.layers.lstm({units: lstmUnits}));
-    model.add(tf.layers.dropout({rate: 0.1}))
+    model.add(tf.layers.dropout({rate: 0.1}));
     model.add(tf.layers.dense({units: vocab.size, activation: 'softmax'}));
 
     // Compile
@@ -224,7 +270,7 @@ async function createSetModel() {
 
     // Save the model
     try {
-        await model.save('file://./Models/V3-RealData');
+        await model.save('file://./Models/V4-PreMassData');
     } catch (error) {
         console.error('There was a problem saving the model:', error);
     }
