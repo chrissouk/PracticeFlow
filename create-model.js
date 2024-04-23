@@ -1,6 +1,6 @@
 const fs = require('fs');
 const csv = require('csv-parser');
-const tf = require('@tensorflow/tfjs-node');
+const tf = require('@tensorflow/tfjs-node-gpu');
 const natural = require('natural');
 const path = require('path');
 
@@ -228,8 +228,8 @@ async function createSetModel() {
     /* < MODEL > */
 
     // Define hyperparameters
-    const embeddingDim = 10;
-    const lstmUnits = 10;
+    const embeddingDim = 128;
+    const lstmUnits = 128;
 
     // construct model architecture
     const model = tf.sequential();
@@ -257,8 +257,8 @@ async function createSetModel() {
     // Train the model
     try {
         await model.fit(XTensor, YTensor, {
-            epochs: 500,
-            batchSize: 4,
+            epochs: 1,
+            batchSize: 1,
             validationSplit: 0.2,
             callbacks: [earlyStoppingCallback]
         });

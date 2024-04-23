@@ -1,5 +1,5 @@
 const fs = require('fs');
-const tf = require('@tensorflow/tfjs-node');
+const tf = require('@tensorflow/tfjs-node-gpu');
 const natural = require('natural');
 const path = require('path');
 
@@ -41,7 +41,7 @@ function arrayDims(arr) {
 
 // Load the model
 async function loadModel() {
-    const model = await tf.loadLayersModel('file://./Models/V4-PreMassDatamodel.json');
+    const model = await tf.loadLayersModel('file://./Models/V4-PreMassData/model.json');
     return model;
 }
 
@@ -117,7 +117,7 @@ async function main() {
     tokens.push(practiceTitle.toLowerCase());
 
     let i = 0;
-    while (tokens[tokens.length - 1] !== "STOP" && i < 1500){
+    while (tokens[tokens.length - 1] !== "STOP" && i < maxXLength - 1){
         console.log(tokens.join(' '));
         let newToken = await generateNextToken(model, tokens.join(' '));
         tokens.push(newToken);
