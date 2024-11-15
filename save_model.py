@@ -1,20 +1,18 @@
 import os
 import logging
+import pickle
 import sys
 import psutil
 import joblib
-import pickle
 import json
 from huggingface_hub import login
 from llama_index.core import SimpleDirectoryReader
-from langchain_huggingface import HuggingFaceEmbeddings  # Updated import
+from langchain_huggingface import HuggingFaceEmbeddings  
 from llama_index.core import VectorStoreIndex, PromptTemplate, Settings
 import torch
 from llama_index.llms.huggingface import HuggingFaceLLM
-from IPython.display import HTML, display
+# from dotenv import load_dotenv
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
-import pandas as pd
-from utils import model_directory
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 logging.getLogger().addHandler(logging.StreamHandler(stream=sys.stdout))
@@ -97,8 +95,8 @@ index = VectorStoreIndex.from_documents(documents, embed_model = embed_model)
 
 """Set up prompts"""
 
-system_prompt = """<|SYSTEM|># You are an AI-enabled medical research assistant.
-Your goal is to answer questions accurately using only the context provided.
+system_prompt = """<|SYSTEM|># You are an AI-enabled swim coach.
+Your goal is to write a new practice following the same structure to the ones in the context provided.
 """
 
 # This will wrap the default prompts that are internal to llama-index
@@ -119,7 +117,7 @@ llm = HuggingFaceLLM(
     model_name=LLM_MODEL_NAME,
     device_map="auto",
     # quantization_config=quantization_config,
-    # uncomment this if using CUDA to reduce memory usage
+    # use below only if using CUDA to reduce memory usage
     # model_kwargs={"torch_dtype": torch.float16 , "load_in_8bit":True}
 )
 
@@ -155,13 +153,13 @@ query_engine = index.as_query_engine(llm=llm, similarity_top_k=5)
 
 """Generate contextual results using retrieval-augmented prompt"""
 
-done = False
-while not done:
-  print("*"*30)
-  question = input("Enter your question: ")
-  response = query_engine.query(question)
-  print(response)
-  done = input("End the chat? (y/n): ") == "y"
+# done = False
+# while not done:
+#   print("*"*30)
+#   question = input("Enter your question: ")
+#   response = query_engine.query(question)
+#   print(response)
+#   done = input("End the chat? (y/n): ") == "y"
 
 
 # Function to save components
@@ -205,5 +203,5 @@ def save_model_components(index, embed_model, llm, path):
         json.dump(llm_config, f)
 
 # Save the model components
-save_path = model_directory
+save_path = "Models/llama_3_model"
 save_model_components(index, embed_model, llm, save_path)

@@ -67,7 +67,7 @@ def save_embedding_model(documents):
     index = faiss.IndexFlatL2(dimension)
     index.add(embeddings_array)
 
-    # Save the responses, not the index (go back if you need the index)
+    faiss.write_index(index, 'Models/llama_3_model/vector_index/index.faiss')
     np.save('Models/llama_3_model/responses.npy', texts)
     
     return embeddings_model

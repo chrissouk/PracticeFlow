@@ -114,7 +114,7 @@ def load_config(directory_path):
 
     with open(config_file_path, "r") as f:
         llm_config = json.load(f)
-        log_time("LLM configuration loaded." + "██" * 20)
+        log_time("LLM configuration loaded." + "██" * 100)
     return llm_config
 
 
@@ -221,8 +221,7 @@ def load_embed_index():
         logging.info("Loading vector index from pickle...")
 
         # Load the vector index using pickle
-        with open('Models/llama_3_model/vector_index/index.pkl', 'rb') as f:
-            index = pickle.load(f)
+        index = faiss.read_index("Models/llama_3_model/vector_index/index.faiss")
 
         # Load responses
         responses = np.load('Models/llama_3_model/responses.npy', allow_pickle=True)
