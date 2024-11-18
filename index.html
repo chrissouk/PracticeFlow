@@ -1,51 +1,85 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
     <head>
+        <meta charset="UTF-8">
 
         <title>AI Practice Generator</title>
-
-        <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
 
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap" rel="stylesheet">
 
         <style type="text/css">
-
             body {
                 background-color: white;
                 font-family: 'Nunito', 'Tahoma', sans-serif;
             }
-            button, #practice{
+            
+            button, #practice {
                 font-family: 'Nunito', 'Tahoma', sans-serif;
                 font-size: 18px;
             }
 
-        </style>
+            #input-container {
+                margin-bottom: 20px;
+            }
 
+            #output {
+                padding: 10px;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                overflow-wrap: break-word;
+            }
+
+            strong {
+                color: #333;
+                font-weight: bold;
+            }
+        </style>
     </head>
     <body>
+    <div style="max-width: 800px; margin: 0 auto; padding: 20px;">
+        <h1>AI Practice Generator</h1>
         
-        <button id="getPracticeButton">Get Practice</button>
-
-        <div id="practice"></div>
+        <div id="input-container">
+            <textarea id="input" rows="4" cols="50" placeholder="Enter your question here..."></textarea>
+            <br><button onclick="generatePractice()">Generate Practice</button>
+        </div>
+        
+        <div id="output"></div>
 
         <script>
-
-            let practiceOutput = document.getElementById('practice');
-            let getPracticeButton = document.getElementById('getPracticeButton');
-
-            getPracticeButton.addEventListener('click', () => {
-                fetch('http://localhost:3000/generate-practice')
-                    .then(response => response.text())
-                    .then(practice => {
-                        // Do something with 'practice'
-                        console.log(practice);
-                        practiceOutput.innerHTML = practice;
-                    });
+        async function generatePractice() {
+            console.log("Running generatePractice in index.html")
+            const input = document.getElementById('input').value;
+            console.log("Successfully defined input")
+            const response = await fetch('http://localhost:3000/generate-practice', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ question: input }),
             });
+
+            const data = await response.json();
+            if (data.success) {
+                // Parse the HTML content
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(data.practice, 'text/html');
+                
+                // Get the formatted practice
+                const practiceElement = doc.body.firstChild;
+                
+                // Clear existing output
+                document.getElementById('output').innerHTML = '';
+                
+                // Append the new practice
+                document.getElementById('output').appendChild(practiceElement);
+            } else {
+                document.getElementById('output').textContent = `Error: ${data.message}`;
+            }
+        }
             
         </script>
-
     </body>
 </html>
