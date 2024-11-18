@@ -271,7 +271,7 @@ def generate_response_from_context(model, tokenizer, question, context):
         output = model.generate(
             input_ids=inputs["input_ids"],
             attention_mask=inputs["attention_mask"],
-            max_new_tokens=20,
+            max_new_tokens=512,
             pad_token_id=tokenizer.eos_token_id,
         )
         
@@ -303,28 +303,36 @@ def runConsole():
       response = generate_response_from_context(model, tokenizer, input_text, best_context)
       print("Answer: " + response)
 
-runConsole()
+# runConsole()
 
-# def main():
-#     directory = "./models/"
-#
-#     index = load_index(directory)
-#     model, tokenizer = load_model(directory)
-#     embed_model = load_embedding_model(directory)
-#     llm_config = load_config(directory)
-#
-#     llm = initialize_llm(llm_config, model, tokenizer)
-#     configure_settings(embed_model, llm)
-#
-#     # Example question + response
-#     question = "What is ECG (Electrocardiography)?"
-#     response = generate_response(model, tokenizer, question)
-#
-#     print("*" * 30)
-#     print("Question:", question)
-#
-#     if response:
-#         print("Response:", response)
-#     else:
-#         print("Failed to generate response.")
+import sys
+
+def main(prompt):
+    directory = "./Models/llama_3_model"
+    
+    index = load_embed_index(directory)
+    model, tokenizer = load_model(directory)
+    embed_model = load_embedding_model(directory)
+    llm_config = load_config(directory)
+    
+    llm = initialize_llm(llm_config, model, tokenizer)
+    configure_settings(embed_model, llm)
+    
+    # Example question + response
+    question = prompt
+    response = generate_response(model, tokenizer, question)
+    
+    print("*" * 30)
+    print("Question:", question)
+    
+    if response:
+        print("Response:", response)
+    else:
+        print("Failed to generate response.")
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        main(sys.argv[1])
+    else:
+        print("Please provide a prompt as a command-line argument.")
 

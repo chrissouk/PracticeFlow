@@ -96,7 +96,7 @@ index = VectorStoreIndex.from_documents(documents, embed_model = embed_model)
 """Set up prompts"""
 
 system_prompt = """<|SYSTEM|># You are an AI-enabled swim coach.
-Your goal is to write a new practice following the same structure to the ones in the context provided.
+Your goal is to write a new practice following the same structure to the ones in the context provided, taking the user's input as the theme for the practice.
 """
 
 # This will wrap the default prompts that are internal to llama-index
