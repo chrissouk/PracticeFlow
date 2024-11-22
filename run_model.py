@@ -10,8 +10,9 @@ import logging
 import warnings
 import numpy as np
 import pandas as pd
+import traceback
 from pydantic import BaseModel
-from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModel
+from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModel, pipeline
 from llama_index.core import PromptTemplate, Settings, SimpleDirectoryReader
 from llama_index.llms.huggingface import HuggingFaceLLM
 from utils import model_directory, pdf_directory, log_time, LLM_MODEL_NAME, EMBEDDING_MODEL_NAME
@@ -72,7 +73,7 @@ def read_documents():
             except Exception as e:
                 logging.warning(f"Failed to read {pdf_file}: {e}")
 
-    print(documents[0])
+    # print(documents[0])
     return documents
 
 # Load the vector index
@@ -87,14 +88,26 @@ def load_index(directory_path):
 
 
 # Load the model and tokenizer
+# def load_model(directory_path):
+#     model_save_path = os.path.join(directory_path, "llm_model")
+#     print(model_save_path)
+#     tokenizer_save_path = os.path.join(directory_path, "llm_tokenizer")
+#     print(tokenizer_save_path)
+
+#     model = AutoModelForCausalLM.from_pretrained(model_save_path)
+#     tokenizer = AutoTokenizer.from_pretrained(tokenizer_save_path)
+
+#     log_time("Model and tokenizer loaded." + "██" * 10)
+#     return model, tokenizer
 def load_model(directory_path):
-    model_save_path = os.path.join(directory_path, "llm_model")
-    tokenizer_save_path = os.path.join(directory_path, "llm_tokenizer")
-
-    model = AutoModelForCausalLM.from_pretrained(model_save_path)
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer_save_path)
-
-    log_time("Model and tokenizer loaded." + "██" * 10)
+    pipe = pipeline("text-generation", model=os.path.join(directory_path, 'llm_pipeline'))#, device=0) # run on gpu
+    model = pipe.model
+    tokenizer = pipe.tokenizer
+    
+    # Verify compatibility
+    if model.config.name_or_path != tokenizer.name_or_path:
+        raise ValueError("Model and tokenizer are incompatible")
+    
     return model, tokenizer
 
 
@@ -110,6 +123,7 @@ def load_embedding_model(directory_path):
 
 # Load LLM configuration from JSON file
 def load_config(directory_path):
+    # print("loading config")
     config_file_path = os.path.join(directory_path, "llm_config.json")
 
     with open(config_file_path, "r") as f:
@@ -147,6 +161,7 @@ def configure_settings(embed_model, llm):
 
 
 def generate_response(model, tokenizer, question):
+    # print("Generating response")
     try:
         log_time(f"Using device: {device}")
 
@@ -259,28 +274,28 @@ def find_best_response(text, embeddings_model, index, responses):
 # Generate answer from context:
 def generate_response_from_context(model, tokenizer, question, context):
     try:
-        log_time("Tokenizing input...")
+        # log_time("Tokenizing input...")
 
         input_text = f"Question: {question}\nContext: {context}"
         inputs = tokenizer(input_text, return_tensors="pt").to(device)
-        log_time("Input tokenized.")
+        # log_time("Input tokenized.")
 
-        log_time("Generating response...")
+        # log_time("Generating response...")
         start_time = time.time()
 
         output = model.generate(
             input_ids=inputs["input_ids"],
             attention_mask=inputs["attention_mask"],
-            max_new_tokens=512,
+            max_new_tokens=50,
             pad_token_id=tokenizer.eos_token_id,
         )
         
         end_time = time.time()
-        log_time(f"Response generated in {end_time - start_time:.2f} seconds.")
+        # log_time(f"Response generated in {end_time - start_time:.2f} seconds.")
 
-        log_time("Decoding response...")
+        # log_time("Decoding response...")
         response = tokenizer.decode(output[0][inputs["input_ids"].shape[-1]:], skip_special_tokens=True)
-        log_time("Response decoded.")
+        # log_time("Response decoded.")
 
         return response
     except Exception as e:
@@ -295,9 +310,10 @@ index, responses = load_embed_index()
 def runConsole():
   while True:
       input_text = input("Enter your question or type 'exit' to quit: ")
+      print(type(input_text))
       if input_text == 'exit':
           break
-      print(input_text)
+    #   print(input_text)
       best_context = find_best_response(input_text, embed_model, index, responses)
       print("Context: " + best_context)
       response = generate_response_from_context(model, tokenizer, input_text, best_context)
@@ -308,27 +324,38 @@ def runConsole():
 import sys
 
 def main(prompt):
-    directory = "./Models/llama_3_model"
-    
-    index = load_embed_index(directory)
-    model, tokenizer = load_model(directory)
-    embed_model = load_embedding_model(directory)
-    llm_config = load_config(directory)
-    
-    llm = initialize_llm(llm_config, model, tokenizer)
-    configure_settings(embed_model, llm)
-    
-    # Example question + response
-    question = prompt
-    response = generate_response(model, tokenizer, question)
-    
-    print("*" * 30)
-    print("Question:", question)
-    
-    if response:
-        print("Response:", response)
-    else:
-        print("Failed to generate response.")
+    try:
+        # print("Recieved prompt: " + prompt)
+        directory = "./Models/llama_3_model"
+        
+        # index = load_embed_index()
+        # print("Loading stuffs")
+        # model, tokenizer = load_model(directory)
+        # embed_model = load_embedding_model(directory)
+        # llm_config = load_config(directory)
+        
+        # print("Initializing llm")
+        # llm = initialize_llm(llm_config, model, tokenizer)
+        # configure_settings(embed_model, llm)
+        
+        # Example question + response
+        question = prompt
+        # print(type(question))
+        best_context = find_best_response(question, embed_model, index, responses)
+        # print("\nGenerating response...\n")
+        response = generate_response_from_context(model, tokenizer, question, best_context)
+        
+        # print("*" * 30)
+        # print("Question:", question)
+        
+        if response:
+            print("Response:" + response)
+        else:
+            print("Failed to generate response.")
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+        print("Traceback:")
+        traceback.print_exc()
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:

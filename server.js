@@ -47,8 +47,10 @@ app.use('/generate-practice', express.json(), async (req, res) => {
 
         // Handle stdout
         pythonProcess.stdout.on('data', (data) => {
-            result += data.toString();
-            console.log('Received data from Python process:', data.toString());
+            if (data.toString().toLowerCase().includes("response:")) {
+                result += data.toString().split("Response:")[1].trim();
+                console.log('Received data from Python process:', data.toString());
+            }
         });
 
         // Handle stderr

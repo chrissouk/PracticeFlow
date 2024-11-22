@@ -1,57 +1,146 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
 
-        <title>AI Practice Generator</title>
+<head>
+    <meta charset="UTF-8">
+    <title>PracticeFlow</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap"
+        rel="stylesheet">
+    <style type="text/css">
+        :root {
+            --primary-blue: #66b3ff;
+            --primary-light: #1a1f2e;
+            --primary-dark: #89ceff;
+            --secondary-blue: #4285f4;
+            --text-primary: #e8eaed;
+            --text-secondary: #9aa0a6;
+            --surface-dark: #0f1419;
+            --surface-medium: #1e2530;
+            --shadow-color: rgba(0, 0, 0, 0.5);
+            --border-color: #2d3748;
+        }
 
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap" rel="stylesheet">
+        body {
+            background-color: var(--surface-dark);
+            font-family: 'Nunito', 'Tahoma', sans-serif;
+            color: var(--text-primary);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
 
-        <style type="text/css">
-            body {
-                background-color: white;
-                font-family: 'Nunito', 'Tahoma', sans-serif;
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: var(--primary-light);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px var(--shadow-color);
+        }
+
+        h1 {
+            color: var(--primary-blue);
+            margin-bottom: 1.5rem;
+            font-size: 2.5rem;
+            text-align: center;
+        }
+
+        #input-container {
+            margin-bottom: 2rem;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 1rem;
+            resize: vertical;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+            background-color: var(--surface-medium);
+            color: var(--text-primary);
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 2px rgba(102, 179, 255, 0.2);
+        }
+
+        textarea::placeholder {
+            color: var(--text-secondary);
+        }
+
+        button {
+            background-color: var(--primary-blue);
+            color: var(--surface-dark);
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 6px;
+            font-family: 'Nunito', 'Tahoma', sans-serif;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            margin-top: 1rem;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        #output {
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--surface-medium);
+            min-height: 100px;
+            margin-top: 1rem;
+        }
+
+        strong {
+            color: var(--primary-blue);
+            font-weight: 700;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 1rem;
+                padding: 1rem;
             }
-            
-            button, #practice {
-                font-family: 'Nunito', 'Tahoma', sans-serif;
-                font-size: 18px;
-            }
 
-            #input-container {
-                margin-bottom: 20px;
+            h1 {
+                font-size: 2rem;
             }
+        }
+    </style>
+</head>
 
-            #output {
-                padding: 10px;
-                border: 1px solid #ccc;
-                border-radius: 5px;
-                overflow-wrap: break-word;
-            }
-
-            strong {
-                color: #333;
-                font-weight: bold;
-            }
-        </style>
-    </head>
-    <body>
-    <div style="max-width: 800px; margin: 0 auto; padding: 20px;">
+<body>
+    <div class="container">
         <h1>AI Practice Generator</h1>
-        
         <div id="input-container">
-            <textarea id="input" rows="4" cols="50" placeholder="Enter your question here..."></textarea>
-            <br><button onclick="generatePractice()">Generate Practice</button>
+            <textarea id="input" rows="4" placeholder="Practice title..."></textarea>
+            <button onclick="generatePractice()">Generate Practice</button>
         </div>
-        
         <div id="output"></div>
-
-        <script>
+    </div>
+    <script>
         async function generatePractice() {
+            // send data
             console.log("Running generatePractice in index.html")
-            const input = document.getElementById('input').value;
+            const input = "PRACTICE " + document.getElementById('input').value;
             console.log("Successfully defined input")
             const response = await fetch('http://localhost:3000/generate-practice', {
                 method: 'POST',
@@ -60,26 +149,19 @@
                 },
                 body: JSON.stringify({ question: input }),
             });
-
+            // interpret data
             const data = await response.json();
             if (data.success) {
-                // Parse the HTML content
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(data.practice, 'text/html');
-                
-                // Get the formatted practice
                 const practiceElement = doc.body.firstChild;
-                
-                // Clear existing output
                 document.getElementById('output').innerHTML = '';
-                
-                // Append the new practice
                 document.getElementById('output').appendChild(practiceElement);
             } else {
                 document.getElementById('output').textContent = `Error: ${data.message}`;
             }
         }
-            
-        </script>
-    </body>
+    </script>
+</body>
+
 </html>

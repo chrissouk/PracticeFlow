@@ -12,7 +12,7 @@ from llama_index.core import VectorStoreIndex, PromptTemplate, Settings
 import torch
 from llama_index.llms.huggingface import HuggingFaceLLM
 # from dotenv import load_dotenv
-from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig, pipeline
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 logging.getLogger().addHandler(logging.StreamHandler(stream=sys.stdout))
@@ -185,6 +185,11 @@ def save_model_components(index, embed_model, llm, path):
     tokenizer = AutoTokenizer.from_pretrained(LLM_MODEL_NAME, 
         max_memory=4.0)
     tokenizer.save_pretrained(os.path.join(path, 'llm_tokenizer'))
+
+    # Save the entire pipeline
+    pipeline_name = "text-generation"
+    pipe = pipeline(pipeline_name, model=model, tokenizer=tokenizer)
+    pipe.save_pretrained(os.path.join(path, 'llm_pipeline'))
 
     # Save the LLM configuration
     llm_config_path = os.path.join(path, "llm_config.json")
