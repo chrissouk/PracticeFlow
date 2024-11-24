@@ -21,8 +21,10 @@ for index, row in practice_csv.iterrows():
   practice.append("PRACTICETITLE")
   practice.append(row['title'])
 
+  current_practice_id = row['practiceID']
+
   for index, row in set_csv.iterrows():
-    if row['practiceID'] == row['practiceID']:
+    if row['practiceID'] == current_practice_id:
       practice.append("SETID")
       practice.append(row['setID'])
 
@@ -32,8 +34,10 @@ for index, row in practice_csv.iterrows():
       practice.append("SETROUNDS")
       practice.append(row['rounds'])
 
+      current_set_id = row['setID']
+      
       for index, row in exercise_csv.iterrows():
-        if row['practiceID'] == row['practiceID'] and row['setID'] == row['setID']:
+        if row['setID'] == current_set_id and row['practiceID'] == current_practice_id:
           practice.append("EXERCISEID")
           practice.append(row['exerciseID'])
 
