@@ -63,7 +63,7 @@ app.use('/generate-practice', express.json(), async (req, res) => {
             console.log(`Python process exited with code ${code}`);
             
             // Format the output
-            const formattedResult = result.replace(/\*\*+/g, '<strong>').replace(/__/g, '</strong>');
+            const formattedResult = result; // result.replace(/\*\*+/g, '<strong>').replace(/__/g, '</strong>');
             console.log('Formatted result:', formattedResult);
             
             // Send response back to client
