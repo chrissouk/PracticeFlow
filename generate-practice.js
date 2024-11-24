@@ -110,11 +110,15 @@ async function generateNextToken(model, text) {
 async function main() {
     const model = await loadModel();
 
-    const practiceTitle = 'Sprint';
+    let practiceTitle = 'Sprint';
+    practiceTitle = tokenizer.tokenize(practiceTitle);
 
     let tokens = [];
     tokens.push("PRACTICETITLE");
-    tokens.push(practiceTitle.toLowerCase());
+    practiceTitle.forEach(word => {
+        tokens.push(word);
+    });
+    tokens.push("SETTITLE");
 
     let i = 0;
     while (tokens[tokens.length - 1] !== "STOP" && i < maxXLength - 1){

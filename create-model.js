@@ -93,7 +93,7 @@ async function createVocab() {
 
 // assign each unique token with its integer representation
 function encode(text, vocab, textLabel) {
-    const tokens = tokenizer.tokenize(text);
+    const tokens = tokenizer.tokenize(text.toLowerCase());
 
     // Initialize an array to hold the encoded integers for each token, plus initialize the start token
     let tokenizedText = [];
@@ -133,7 +133,7 @@ async function pad(arr, vocab) {
 
 // MAIN
 
-async function createSetModel() {
+async function createModel() {
 
     /* < FEATURES & LABELS > */
     
@@ -156,17 +156,18 @@ async function createSetModel() {
         ...practiceInfo,
         sets: setIDGrouped.filter(setInfo => setInfo.practiceID === practiceInfo.practiceID)
     }));
-   
+    
+    console.log(practiceIDGrouped)
     
     // convert into array of encoded practices
     const encodedDataArray = practiceIDGrouped.map(practiceInfo => {
         let encodedDataArray = [];
 
-        let encodedPracticeTitle = encode(practiceInfo.title.toLowerCase(), vocab, "PRACTICETITLE");
+        let encodedPracticeTitle = encode(practiceInfo.title, vocab, "PRACTICETITLE");
         encodedDataArray.push(encodedPracticeTitle);
 
         practiceInfo.sets.forEach(setInfo => {
-            let encodedSetTitle = encode(setInfo.title.toLowerCase(), vocab, "SETTITLE");
+            let encodedSetTitle = encode(setInfo.title, vocab, "SETTITLE");
             encodedDataArray.push(encodedSetTitle);
 
             let encodedSetRounds = encode(setInfo.rounds, vocab, "SETROUNDS");
@@ -179,13 +180,13 @@ async function createSetModel() {
                 let encodedExerciseDistance = encode(exerciseInfo.distance, vocab, "EXERCISEDISTANCE");
                 encodedDataArray.push(encodedExerciseDistance);
 
-                let encodedExerciseEnergy = encode(exerciseInfo.energy.toLowerCase(), vocab, "EXERCISEENERGY");
+                let encodedExerciseEnergy = encode(exerciseInfo.energy, vocab, "EXERCISEENERGY");
                 encodedDataArray.push(encodedExerciseEnergy);
 
-                let encodedExerciseType = encode(exerciseInfo.type.toLowerCase(), vocab, "EXERCISETYPE");
+                let encodedExerciseType = encode(exerciseInfo.type, vocab, "EXERCISETYPE");
                 encodedDataArray.push(encodedExerciseType);
 
-                let encodedExerciseStroke = encode(exerciseInfo.stroke.toLowerCase(), vocab, "EXERCISESTROKE");
+                let encodedExerciseStroke = encode(exerciseInfo.stroke, vocab, "EXERCISESTROKE");
                 encodedDataArray.push(encodedExerciseStroke);
             });
         });
@@ -257,7 +258,7 @@ async function createSetModel() {
     // Train the model
     try {
         await model.fit(XTensor, YTensor, {
-            epochs: 1,
+            epochs: 500,
             batchSize: 1,
             validationSplit: 0.2,
             callbacks: [earlyStoppingCallback]
@@ -276,4 +277,4 @@ async function createSetModel() {
 }
 
 // Call the asynchronous function to start the execution
-createSetModel().catch(console.error);
+createModel().catch(console.error);
