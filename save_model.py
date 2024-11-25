@@ -96,17 +96,16 @@ index = VectorStoreIndex.from_documents(documents, embed_model = embed_model)
 
 """Set up prompts"""
 
-system_prompt = """<SYSTEM>Y4:0
+system_prompt = """<SYSTEM># You are an AI-enabled swim coach.
 Generate a swim workout in the exact format of the provided context.
 Use tokens: PRACTICETITLE, SETID, SETTITLE, SETROUNDS, EXERCISEID, EXERCISEREPS, EXERCISEDISTANCE, EXERCISEENERGY, EXERCISETYPE, EXERCISESTROKE
-Include prompt in response
+Do NOT generate any additional text outside these tokens.
+Start with PRACTICETITLE followed by the provided title
 Include a variety of sets and exercises
 Maintain exact capitalization and spacing of tokens
 Prioritize variety in strokes, techniques, and intensities
-End after last exercise, no closing statements
 Ensure each set has a unique SETID
 Use appropriate values for EXERCISEENERGY (EN1, EN3, SP1, SP3, REC) and EXERCISETYPE (WU, D, S)
-Include a mix of different strokes and techniques
 Adjust difficulty and volume based on the workout title
 """
 

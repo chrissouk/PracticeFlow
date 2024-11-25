@@ -351,12 +351,12 @@ def main(prompt):
         # print("Question:", question)
         
         if response:
-            print("Response:" + response)
+            log_time("Response:" + response)
         else:
-            print("Failed to generate response.")
+            log_time("Failed to generate response.")
     except Exception as e:
-        print(f"An error occurred: {str(e)}")
-        print("Traceback:")
+        log_time(f"An error occurred: {str(e)}")
+        log_time("Traceback:")
         traceback.print_exc()
 
 if __name__ == "__main__":

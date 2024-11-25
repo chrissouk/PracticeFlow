@@ -26,6 +26,10 @@
     <div id="output"></div>
 
     <script>
+        let userDefinedPracticeDetails = {
+            title: ""
+        }
+
         function parseWorkout(input) {
             console.log("Parsing workout...")
 
@@ -63,7 +67,7 @@
 
 
             let workout = {
-                title: 'Untitled Practice',
+                title: userDefinedPracticeDetails.title,
                 sets: []
             };
 
@@ -76,7 +80,7 @@
                 console.log(tokens[i] + " " + i)
                 switch (tokens[i]) {
                     case 'PRACTICETITLE':
-                        workout.title = tokens[++i] || 'Untitled Practice';
+                        workout.title = tokens[++i] || userDefinedPracticeDetails.title;
                         break;
                     case 'SETID':
                         currentSet = {
@@ -186,10 +190,10 @@
                 parts.push(`${exercise.distance}`);
             }
             if (exercise.interval) {
-                parts.push(`${exercise.interval}`)
+                parts.push(`@ ${exercise.interval}`)
             }
             if (exercise.energy) {
-                parts.push(`@ ${exercise.energy}`);
+                parts.push(`${exercise.energy}`);
             }
             if (exercise.type) {
                 parts.push(exercise.type);
@@ -203,6 +207,7 @@
         async function generatePractice() {
             console.log("Running generatePractice in index.html");
             const input = document.getElementById('input').value;
+            userDefinedPracticeDetails.title = input;
             console.log("Successfully defined input");
 
             try {
@@ -216,7 +221,7 @@
 
                 const data = await response.json();
                 if (data.success) {
-                    console.log("Recieved data: " + data)
+                    // console.log("Recieved data: " + data)
                     // server data
                     const workout = parseWorkout(data.practice);
                     // perfect generation test
@@ -225,6 +230,8 @@
                     // const workout = parseWorkout("EXERCISESTROKE CH1 EXERCISEID 2 EXERCISEREPS 2 EXERCISEDISTANCE 200 EXERCISEENERGY EN1 EXERCISETYPE S EXERCISESTROKE CH1 EXERCISEID 3 EXERCISEREPS 2 EXERCISEDISTANCE 150 EXERCISEENERGY EN2 EX")
                     // decent generation test
                     // const workout = parseWorkout("SETID 6 SETTITLE Cool Down SETROUNDS 1 EXERCISEID 0 EXERCISEREPS 1 EXERCISEDISTANCE 50 EXERCISEINTERVAL")
+                    // another test
+                    // const workout = parseWorkout("EXERCISEID 1 EXERCISEREPS 1 EXERCISEDISTANCE 400 EXERCISEINTERVAL 480 EXERCISEENERGY EN1 EXERCI")
 
 
                     const outputHtml = `
