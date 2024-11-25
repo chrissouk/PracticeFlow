@@ -21,9 +21,10 @@
         <div id="input-container">
             <textarea id="input" rows="4" placeholder="Practice title..."></textarea>
             <button onclick="generatePractice()">Generate Practice</button>
-        </div>
-        <div id="output"></div>
+        </div> 
     </div>
+    <div id="output"></div>
+
     <script>
         function parseWorkout(input) {
             console.log("Parsing workout...")
@@ -80,6 +81,7 @@
                     case 'SETID':
                         if (currentSet) {
                             workout.sets.push(currentSet)
+                            lastExerciseID = 0
                         }
                         currentSet = {
                             id: tokens[++i] || (++lastSetID).toString(),
@@ -100,20 +102,20 @@
                         }
                         break;
                     case 'EXERCISEID':
-                        if (tokens[i+1] == "0" && !currentSet) {  // if first exercise
-                            if (lastExerciseID > 0) { workout.sets.push(currentSet); }
+                        if (lastExerciseID == -1 && !currentSet) {  // if first exercise
                             currentSet = {
                                 id: (++lastSetID).toString(),
                                 title: 'Untitled Set',
                                 rounds: 1,
                                 exercises: []
                             };
+                            workout.sets.push(currentSet)
                             // lastSetID = parseInt(currentSet.id)
                         } 
                         if (currentSet) {
                             currentExercise = {
                                 id: tokens[++i] || (++lastExerciseID).toString,
-                                reps: 1,
+                                reps: 1, 
                                 distance: 0,
                                 energy: '',
                                 type: '',
@@ -152,12 +154,14 @@
             }
 
             // Push final exercise and set if they exist
-            if (currentExercise && currentSet) {
-                currentSet.exercises.push(currentExercise);
-            }
-            if (currentSet) {
-                workout.sets.push(currentSet);
-            }
+            // if (currentExercise && currentSet) {
+            //     console.log(currentSet.exercises)
+            //     console.log(currentExercise)
+            //     // currentSet.exercises.push(currentExercise);
+            // }
+            // if (currentSet) {
+            //     workout.sets.push(currentSet);
+            // }
 
             // console.log(workout.sets)
             return workout;
@@ -200,11 +204,16 @@
                 // const data = await response.json();
                 // if (data.success) {
                     // console.log("Recieved data: " + data)
+                    // server data
                     // const workout = parseWorkout(data.practice);
+                    // perfect generation test
                     const workout = parseWorkout("PRACTICETITLE Sprint SETID 0 SETTITLE Warm Up SETROUNDS 1 EXERCISEID 0 EXERCISEREPS  1  EXERCISEDISTANCE  1000  EXERCISEENERGY  EN1  EXERCISETYPE  WU EXERCISESTROKE CH1 SETID 1 SETTITLE Drills SETROUNDS 4 EXERCISEID 0 EXERCISEREPS 3 EXERCISEDISTANCE 75 EXERCISEENERGY EN1 EXERCISETYPE D EXERCISESTROKE CH1 EXERCISEID 1 EXERCISEREPS 3 EXERCISEDISTANCE 25 EXERCISEENERGY EN3 EXERCISETYPE S EXERCISESTROKE CH1 SETID 2 SETTITLE Resistance SETROUNDS 4 EXERCISEID 0 EXERCISEREPS 4 EXERCISEDISTANCE 25 EXERCISEENERGY EN3 EXERCISETYPE S EXERCISESTROKE CH1 EXERCISEID 1 EXERCISEREPS 3 EXERCISEDISTANCE 50 EXERCISEENERGY EN3 EXERCISETYPE S EXERCISESTROKE CH1 SETID 3 SETTITLE Start Work SETROUNDS 1 EXERCISEID 0 EXERCISEREPS 8 EXERCISEDISTANCE 25 EXERCISEENERGY EN1 EXERCISETYPE S EXERCISESTROKE  CH1  SETID  4  SETTITLE  Front  End  Speed  SETROUNDS  3  EXERCISEID  0 EXERCISEREPS 1 EXERCISEDISTANCE 50 EXERCISEENERGY SP1 EXERCISETYPE S EXERCISESTROKE CH1 EXERCISEID 1 EXERCISEREPS 2 EXERCISEDISTANCE 100 EXERCISEENERGY EN1 EXERCISETYPE S EXERCISESTROKE CH1 EXERCISEID 2 EXERCISEREPS 1 EXERCISEDISTANCE 50 EXERCISEENERGY SP3 EXERCISETYPE S EXERCISESTROKE CH1 EXERCISEID 3 EXERCISEREPS 1 EXERCISEDISTANCE 200 EXERCISEENERGY REC EXERCISETYPE S EXERCISESTROKE CH1 SETID 5 SETTITLE Untitled SETROUNDS 1 EXERCISEID 0 EXERCISEREPS 1 EXERCISEDISTANCE 300 EXERCISEENERGY EN1 EXERCISETYPE S EXERCISESTROKE CH1")
+                    // bad generation test
+                    // const workout = parseWorkout("EXERCISESTROKE CH1 EXERCISEID 2 EXERCISEREPS 2 EXERCISEDISTANCE 200 EXERCISEENERGY EN1 EXERCISETYPE S EXERCISESTROKE CH1 EXERCISEID 3 EXERCISEREPS 2 EXERCISEDISTANCE 150 EXERCISEENERGY EN2 EX")
+
 
                     const outputHtml = `
-                        <div class="practice-container">
+                        <div class="container">
                             <h2 class="practice-title">${workout.title}</h2>
                             ${workout.sets.map(set => `
                                 <div class="practice-set">
