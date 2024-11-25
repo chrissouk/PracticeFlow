@@ -332,7 +332,7 @@ async function dataParser(){
             exerciseID: info[2],
             reps: info[3],
             distance: info[4],
-            // interval: info[5],
+            interval: info[5],
             energy: info[6],
             type: info[7],
             stroke: info[8],
