@@ -11,7 +11,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from llama_index.core import VectorStoreIndex, PromptTemplate, Settings
 import torch
 from llama_index.llms.huggingface import HuggingFaceLLM
-# from dotenv import load_dotenv
+from dotenv import load_dotenv
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig, pipeline
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -21,8 +21,9 @@ logging.getLogger().addHandler(logging.StreamHandler(stream=sys.stdout))
 # login to huggingface
 from huggingface_hub import login
 
-os.environ["HF_KEY"] = "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"
-login(token=os.environ.get('HF_KEY'),add_to_git_credential=True)
+load_dotenv()
+HF_KEY = os.getenv('HF_KEY')
+login(token=HF_KEY,add_to_git_credential=True)
 
 # GPU acceleration with metal on Mac
 device = torch.device("metal") if torch.cuda.is_available() else torch.device("cpu")
@@ -95,8 +96,18 @@ index = VectorStoreIndex.from_documents(documents, embed_model = embed_model)
 
 """Set up prompts"""
 
-system_prompt = """<|SYSTEM|># You are an AI-enabled swim coach.
-Your goal is to write a new practice following the same structure to the ones in the context provided, taking the user's input as the theme for the practice.
+system_prompt = """<SYSTEM>Y4:0
+Generate a swim workout in the exact format of the provided context.
+Use tokens: PRACTICETITLE, SETID, SETTITLE, SETROUNDS, EXERCISEID, EXERCISEREPS, EXERCISEDISTANCE, EXERCISEENERGY, EXERCISETYPE, EXERCISESTROKE
+Include prompt in response
+Include a variety of sets and exercises
+Maintain exact capitalization and spacing of tokens
+Prioritize variety in strokes, techniques, and intensities
+End after last exercise, no closing statements
+Ensure each set has a unique SETID
+Use appropriate values for EXERCISEENERGY (EN1, EN3, SP1, SP3, REC) and EXERCISETYPE (WU, D, S)
+Include a mix of different strokes and techniques
+Adjust difficulty and volume based on the workout title
 """
 
 # This will wrap the default prompts that are internal to llama-index

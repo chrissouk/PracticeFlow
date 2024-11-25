@@ -11,6 +11,7 @@ import warnings
 import numpy as np
 import pandas as pd
 import traceback
+from dotenv import load_dotenv
 from pydantic import BaseModel
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModel, pipeline
 from llama_index.core import PromptTemplate, Settings, SimpleDirectoryReader
@@ -20,8 +21,9 @@ from utils import model_directory, pdf_directory, log_time, LLM_MODEL_NAME, EMBE
 # login to huggingface
 from huggingface_hub import login
 
-os.environ["HF_KEY"] = "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"
-login(token=os.environ.get('HF_KEY'),add_to_git_credential=True)
+load_dotenv()
+HF_KEY = os.getenv('HF_KEY')
+login(token=HF_KEY,add_to_git_credential=True)
 
 # GPU acceleration with metal on Mac
 device = torch.device("metal") if torch.cuda.is_available() else torch.device("cpu")
@@ -362,4 +364,6 @@ if __name__ == "__main__":
         main(sys.argv[1])
     else:
         print("Please provide a prompt as a command-line argument.")
+        print("Running test with prompt: \"PRACTICETITLE Sprint\"")
+        main("PRACTICETITLE Sprint")
 
