@@ -66,6 +66,7 @@ h1 {
     text-align: center;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     background: linear-gradient(120deg, var(--primary-blue), var(--secondary-blue));
+    background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
