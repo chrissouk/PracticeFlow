@@ -1,0 +1,438 @@
+[
+  {
+    "key": "NULL",
+    "value": 0
+  },
+  {
+    "key": "PRACTICETITLE",
+    "value": 1
+  },
+  {
+    "key": "SETTITLE",
+    "value": 2
+  },
+  {
+    "key": "SETROUNDS",
+    "value": 3
+  },
+  {
+    "key": "EXERCISEREPS",
+    "value": 4
+  },
+  {
+    "key": "EXERCISEDISTANCE",
+    "value": 5
+  },
+  {
+    "key": "EXERCISEENERGY",
+    "value": 6
+  },
+  {
+    "key": "EXERCISETYPE",
+    "value": 7
+  },
+  {
+    "key": "EXERCISESTROKE",
+    "value": 8
+  },
+  {
+    "key": "STOP",
+    "value": 9
+  },
+  {
+    "key": "sprint",
+    "value": 10
+  },
+  {
+    "key": "untitled",
+    "value": 11
+  },
+  {
+    "key": "distance",
+    "value": 12
+  },
+  {
+    "key": "test",
+    "value": 13
+  },
+  {
+    "key": "set",
+    "value": 14
+  },
+  {
+    "key": "and",
+    "value": 15
+  },
+  {
+    "key": "mid",
+    "value": 16
+  },
+  {
+    "key": "fly",
+    "value": 17
+  },
+  {
+    "key": "br",
+    "value": 18
+  },
+  {
+    "key": "free",
+    "value": 19
+  },
+  {
+    "key": "back",
+    "value": 20
+  },
+  {
+    "key": "warm",
+    "value": 21
+  },
+  {
+    "key": "up",
+    "value": 22
+  },
+  {
+    "key": "drills",
+    "value": 23
+  },
+  {
+    "key": "resistance",
+    "value": 24
+  },
+  {
+    "key": "start",
+    "value": 25
+  },
+  {
+    "key": "work",
+    "value": 26
+  },
+  {
+    "key": "front",
+    "value": 27
+  },
+  {
+    "key": "end",
+    "value": 28
+  },
+  {
+    "key": "speed",
+    "value": 29
+  },
+  {
+    "key": "kds",
+    "value": 30
+  },
+  {
+    "key": "pull",
+    "value": 31
+  },
+  {
+    "key": "stroke",
+    "value": 32
+  },
+  {
+    "key": "count",
+    "value": 33
+  },
+  {
+    "key": "skills",
+    "value": 34
+  },
+  {
+    "key": "k",
+    "value": 35
+  },
+  {
+    "key": "d",
+    "value": 36
+  },
+  {
+    "key": "s",
+    "value": 37
+  },
+  {
+    "key": "ladder",
+    "value": 38
+  },
+  {
+    "key": "pre",
+    "value": 39
+  },
+  {
+    "key": "go",
+    "value": 40
+  },
+  {
+    "key": "in",
+    "value": 41
+  },
+  {
+    "key": "heats",
+    "value": 42
+  },
+  {
+    "key": "widths",
+    "value": 43
+  },
+  {
+    "key": "preset",
+    "value": 44
+  },
+  {
+    "key": "for",
+    "value": 45
+  },
+  {
+    "key": "500",
+    "value": 46
+  },
+  {
+    "key": "dps",
+    "value": 47
+  },
+  {
+    "key": "add",
+    "value": 48
+  },
+  {
+    "key": "kick",
+    "value": 49
+  },
+  {
+    "key": "fine",
+    "value": 50
+  },
+  {
+    "key": "100s",
+    "value": 51
+  },
+  {
+    "key": "drill",
+    "value": 52
+  },
+  {
+    "key": "swim",
+    "value": 53
+  },
+  {
+    "key": "321",
+    "value": 54
+  },
+  {
+    "key": "pace",
+    "value": 55
+  },
+  {
+    "key": "cool",
+    "value": 56
+  },
+  {
+    "key": "down",
+    "value": 57
+  },
+  {
+    "key": "turnfinish",
+    "value": 58
+  },
+  {
+    "key": "1",
+    "value": 59
+  },
+  {
+    "key": "butterfly",
+    "value": 60
+  },
+  {
+    "key": "breaststroke",
+    "value": 61
+  },
+  {
+    "key": "cont",
+    "value": 62
+  },
+  {
+    "key": "turn",
+    "value": 63
+  },
+  {
+    "key": "main",
+    "value": 64
+  },
+  {
+    "key": "starts",
+    "value": 65
+  },
+  {
+    "key": "turns",
+    "value": 66
+  },
+  {
+    "key": "meet",
+    "value": 67
+  },
+  {
+    "key": "200s",
+    "value": 68
+  },
+  {
+    "key": "otb",
+    "value": 69
+  },
+  {
+    "key": "4",
+    "value": 70
+  },
+  {
+    "key": "3",
+    "value": 71
+  },
+  {
+    "key": "2",
+    "value": 72
+  },
+  {
+    "key": "8",
+    "value": 73
+  },
+  {
+    "key": "6",
+    "value": 74
+  },
+  {
+    "key": "16",
+    "value": 75
+  },
+  {
+    "key": "10",
+    "value": 76
+  },
+  {
+    "key": "12",
+    "value": 77
+  },
+  {
+    "key": "1000",
+    "value": 78
+  },
+  {
+    "key": "75",
+    "value": 79
+  },
+  {
+    "key": "25",
+    "value": 80
+  },
+  {
+    "key": "50",
+    "value": 81
+  },
+  {
+    "key": "100",
+    "value": 82
+  },
+  {
+    "key": "200",
+    "value": 83
+  },
+  {
+    "key": "300",
+    "value": 84
+  },
+  {
+    "key": "150",
+    "value": 85
+  },
+  {
+    "key": "400",
+    "value": 86
+  },
+  {
+    "key": "800",
+    "value": 87
+  },
+  {
+    "key": "600",
+    "value": 88
+  },
+  {
+    "key": "30",
+    "value": 89
+  },
+  {
+    "key": "15",
+    "value": 90
+  },
+  {
+    "key": "en1",
+    "value": 91
+  },
+  {
+    "key": "en3",
+    "value": 92
+  },
+  {
+    "key": "sp1",
+    "value": 93
+  },
+  {
+    "key": "sp3",
+    "value": 94
+  },
+  {
+    "key": "rec",
+    "value": 95
+  },
+  {
+    "key": "en2",
+    "value": 96
+  },
+  {
+    "key": "wu",
+    "value": 97
+  },
+  {
+    "key": "p",
+    "value": 98
+  },
+  {
+    "key": "t",
+    "value": 99
+  },
+  {
+    "key": "ch1",
+    "value": 100
+  },
+  {
+    "key": "fr",
+    "value": 101
+  },
+  {
+    "key": "ch",
+    "value": 102
+  },
+  {
+    "key": "bk",
+    "value": 103
+  },
+  {
+    "key": "pad",
+    "value": 104
+  },
+  {
+    "key": "fin",
+    "value": 105
+  },
+  {
+    "key": "stk",
+    "value": 106
+  },
+  {
+    "key": "frm",
+    "value": 107
+  },
+  {
+    "key": "im",
+    "value": 108
+  }
+]

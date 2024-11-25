@@ -1,51 +1,281 @@
 <!DOCTYPE html>
-<html>
-    <head>
+<html lang="en">
 
-        <title>AI Practice Generator</title>
+<head>
+    <meta charset="UTF-8">
+    <title>PracticeFlow</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap"
+        rel="stylesheet">
+    <link href="/styles.css" rel="stylesheet">
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+</head>
 
-        <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<body>
+    <div class="container">
+        <h1>PracticeFlow</h1>
+        <div id="input-container">
+            <textarea id="input" rows="4" placeholder="Practice title..."></textarea>
+            <button onclick="generatePractice()">Generate Practice</button>
+        </div> 
+    </div>
+    <div id="output"></div>
 
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap" rel="stylesheet">
+    <script>
+        let userDefinedPracticeDetails = {
+            title: ""
+        }
 
-        <style type="text/css">
+        function parseWorkout(input) {
+            console.log("Parsing workout...")
 
-            body {
-                background-color: white;
-                font-family: 'Nunito', 'Tahoma', sans-serif;
-            }
-            button, #practice{
-                font-family: 'Nunito', 'Tahoma', sans-serif;
-                font-size: 18px;
-            }
+            // tokenize
+            const whitespace = /\s+/g;
+            const whitespaceSplit = input.split(whitespace);
 
-        </style>
-
-    </head>
-    <body>
-        
-        <button id="getPracticeButton">Get Practice</button>
-
-        <div id="practice"></div>
-
-        <script>
-
-            let practiceOutput = document.getElementById('practice');
-            let getPracticeButton = document.getElementById('getPracticeButton');
-
-            getPracticeButton.addEventListener('click', () => {
-                fetch('http://localhost:3000/generate-practice')
-                    .then(response => response.text())
-                    .then(practice => {
-                        // Do something with 'practice'
-                        console.log(practice);
-                        practiceOutput.innerHTML = practice;
-                    });
+            const allCaps = /\b[A-Z0-9]+\b/;
+            let nonAllCapsCount = 0;
+            let tokens = [];
+            whitespaceSplit.forEach((word, index, array) => {
+                // console.log(word)
+                if (!allCaps.test(word)) { // encounters nonAllCaps
+                    // console.log("nonAllCaps: " + word + "\n" + "nACC:" + nonAllCapsCount)
+                    nonAllCapsCount++;
+                } else if (/*allCaps.test(word) && */nonAllCapsCount == 0) { // first allCaps
+                    // console.log("first allCaps: " + word + "\n" + "nACC:" + nonAllCapsCount)
+                    tokens.push(word)
+                } else if (/*allCaps.test(word) && */nonAllCapsCount > 0) {  // stumbles upon allCaps after multiple nonAllCaps
+                    let phrase = ""
+                    for (let i = nonAllCapsCount; i > 0; i--) {
+                        phrase += " " + whitespaceSplit[index-i];
+                    }
+                    phrase = phrase.trim()
+                    console.log("that other one: " + phrase + ", " + word + "\n" + "nACC:" + nonAllCapsCount)
+                    tokens.push(phrase)
+                    tokens.push(word)
+                    nonAllCapsCount = 0;
+                }
             });
-            
-        </script>
 
-    </body>
+            // for (let i = 0; i < tokens.length; i++) {
+            //     console.log(tokens[i])
+            // }
+
+
+            let workout = {
+                title: userDefinedPracticeDetails.title,
+                sets: []
+            };
+
+            let currentSet = null;
+            let lastSetID = -1
+            let currentExercise = null;
+            let lastExerciseID = -1
+
+            for (let i = 0; i < tokens.length; i++) {
+                console.log(tokens[i] + " " + i)
+                switch (tokens[i]) {
+                    case 'PRACTICETITLE':
+                        workout.title = tokens[++i] || userDefinedPracticeDetails.title;
+                        break;
+                    case 'SETID':
+                        currentSet = {
+                            id: tokens[++i] || (++lastSetID).toString(),
+                            title: 'Untitled Set',
+                            rounds: 1,
+                            exercises: []
+                        };
+                        workout.sets.push(currentSet)
+                        lastSetID = parseInt(currentSet.id)
+                        break;
+                    case 'SETTITLE':
+                        if (currentSet) {
+                            currentSet.title = tokens[++i] || 'Untitled Set';
+                        }
+                        break;
+                    case 'SETROUNDS':
+                        if (currentSet) {
+                            currentSet.rounds = parseInt(tokens[++i]) || 1;
+                        }
+                        break;
+                    case 'EXERCISEID':
+                        if (lastExerciseID == -1 && !currentSet) {  // if first exercise
+                            currentSet = {
+                                id: (++lastSetID).toString(),
+                                title: 'Untitled Set',
+                                rounds: 1,
+                                exercises: []
+                            };
+                            workout.sets.push(currentSet)
+                            // lastSetID = parseInt(currentSet.id)
+                        } 
+                        if (currentSet) {
+                            currentExercise = {
+                                id: tokens[++i] || (++lastExerciseID).toString,
+                                reps: 1, 
+                                distance: 0,
+                                interval: '',
+                                energy: '',
+                                type: '',
+                                stroke: ''
+                            };
+                            lastExerciseID = parseInt(currentExercise.id)
+                            currentSet.exercises.push(currentExercise);
+                        }
+                        break;
+                    case 'EXERCISEREPS':
+                        if (currentExercise) {
+                            currentExercise.reps = parseInt(tokens[++i]) || 1;
+                        }
+                        break;
+                    case 'EXERCISEDISTANCE':
+                        if (currentExercise) {
+                            currentExercise.distance = parseInt(tokens[++i]) || 0;
+                        }
+                        break;
+                    case 'EXERCISEINTERVAL':
+                        if (currentExercise) {
+                            // format interval
+                            const seconds = parseInt(tokens[++i]);
+                            const minutes = Math.floor(seconds / 60);
+                            const remainingSeconds = Math.floor(seconds % 60);
+                            
+                            const interval = `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+
+                            currentExercise.interval = interval
+                        }
+                        break;
+                    case 'EXERCISEENERGY':
+                        if (currentExercise) {
+                            currentExercise.energy = tokens[++i] || '';
+                        }
+                        break;
+                    case 'EXERCISETYPE':
+                        if (currentExercise) {
+                            currentExercise.type = tokens[++i] || '';
+                        }
+                        break;
+                    case 'EXERCISESTROKE':
+                        if (currentExercise) {
+                            currentExercise.stroke = tokens[++i] || '';
+                        }
+                        break;
+                }
+            }
+
+            // Push final exercise and set if they exist
+            // if (currentExercise && currentSet) {
+            //     console.log(currentSet.exercises)
+            //     console.log(currentExercise)
+            //     // currentSet.exercises.push(currentExercise);
+            // }
+            // if (currentSet) {
+            //     workout.sets.push(currentSet);
+            // }
+
+            console.log(workout.sets)
+            return workout;
+        }
+
+        function formatExercise(exercise) {
+            let parts = [];
+            if (exercise.reps > 0) {
+                parts.push(`${exercise.reps} x`);
+            }
+            if (exercise.distance > 0) {
+                parts.push(`${exercise.distance}`);
+            }
+            if (exercise.interval) {
+                parts.push(`@ ${exercise.interval}`)
+            }
+            if (exercise.energy) {
+                parts.push(`${exercise.energy}`);
+            }
+            if (exercise.type) {
+                parts.push(exercise.type);
+            }
+            if (exercise.stroke) {
+                parts.push(exercise.stroke);
+            }
+            return parts.join(' ');
+        }
+
+        async function generatePractice() {
+            console.log("Running generatePractice in index.html");
+            const input = document.getElementById('input').value;
+            userDefinedPracticeDetails.title = input;
+            console.log("Successfully defined input");
+
+            try {
+                const response = await fetch('http://localhost:3000/generate-practice', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ question: input }),
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    // console.log("Recieved data: " + data)
+                    // server data
+                    const workout = parseWorkout(data.practice);
+                    // perfect generation test
+                    // const workout = parseWorkout("PRACTICETITLE Sprint SETID 0 SETTITLE Warm Up SETROUNDS 1 EXERCISEID 0 EXERCISEREPS  1  EXERCISEDISTANCE  1000  EXERCISEINTERVAL  900  EXERCISEENERGY EN1  EXERCISETYPE  WU  EXERCISESTROKE  CH1  SETID  1  SETTITLE  Drills  SETROUNDS  4 EXERCISEID 0 EXERCISEREPS 3 EXERCISEDISTANCE 75 EXERCISEINTERVAL 80 EXERCISEENERGY EN1 EXERCISETYPE D EXERCISESTROKE CH1 EXERCISEID 1 EXERCISEREPS  3  EXERCISEDISTANCE  25  EXERCISEINTERVAL  30  EXERCISEENERGY  EN3 EXERCISETYPE  S  EXERCISESTROKE  CH1  SETID  2  SETTITLE  Resistance  SETROUNDS  4 EXERCISEID 0 EXERCISEREPS 4 EXERCISEDISTANCE 25 EXERCISEINTERVAL 30 EXERCISEENERGY EN3 EXERCISETYPE S EXERCISESTROKE CH1 EXERCISEID 1 EXERCISEREPS  3  EXERCISEDISTANCE  50  EXERCISEINTERVAL  60  EXERCISEENERGY  EN3 EXERCISETYPE  S  EXERCISESTROKE  CH1  SETID  3  SETTITLE  Start  Work  SETROUNDS  1 EXERCISEID 0 EXERCISEREPS 8 EXERCISEDISTANCE 25 EXERCISEINTERVAL 90 EXERCISEENERGY EN1 EXERCISETYPE S EXERCISESTROKE CH1 SETID 4 SETTITLE Front End Speed SETROUNDS 3 EXERCISEID 0 EXERCISEREPS 1 EXERCISEDISTANCE 50 EXERCISEINTERVAL 180 EXERCISEENERGY SP1 EXERCISETYPE S EXERCISESTROKE CH1 EXERCISEID 1 EXERCISEREPS 2 EXERCISEDISTANCE 100 EXERCISEINTERVAL 120 EXERCISEENERGY EN1 EXERCISETYPE S EXERCISESTROKE CH1 EXERCISEID 2 EXERCISEREPS  1  EXERCISEDISTANCE  50  EXERCISEINTERVAL  60  EXERCISEENERGY  SP3 EXERCISETYPE S EXERCISESTROKE CH1 EXERCISEID 3 EXERCISEREPS 1 EXERCISEDISTANCE 200 EXERCISEINTERVAL 240 EXERCISEENERGY REC EXERCISETYPE S EXERCISESTROKE CH1 SETID 5 SETTITLE Untitled SETROUNDS 1 EXERCISEID 0 EXERCISEREPS  1  EXERCISEDISTANCE  300  EXERCISEINTERVAL  360  EXERCISEENERGY EN1 EXERCISETYPE S EXERCISESTROKE CH1")
+                    // bad generation test
+                    // const workout = parseWorkout("EXERCISESTROKE CH1 EXERCISEID 2 EXERCISEREPS 2 EXERCISEDISTANCE 200 EXERCISEENERGY EN1 EXERCISETYPE S EXERCISESTROKE CH1 EXERCISEID 3 EXERCISEREPS 2 EXERCISEDISTANCE 150 EXERCISEENERGY EN2 EX")
+                    // decent generation test
+                    // const workout = parseWorkout("SETID 6 SETTITLE Cool Down SETROUNDS 1 EXERCISEID 0 EXERCISEREPS 1 EXERCISEDISTANCE 50 EXERCISEINTERVAL")
+                    // another test
+                    // const workout = parseWorkout("EXERCISEID 1 EXERCISEREPS 1 EXERCISEDISTANCE 400 EXERCISEINTERVAL 480 EXERCISEENERGY EN1 EXERCI")
+
+
+                    const outputHtml = `
+                        <div class="container">
+                            <h2 class="practice-title">${workout.title}</h2>
+                            ${workout.sets.map(set => `
+                                <div class="practice-set">
+                                    <h3 class="set-title">${set.title}${set.rounds > 1 ? ` (${set.rounds}x)` : ''}</h3>
+                                    <div class="set-exercises">
+                                        ${set.exercises.map(exercise => `
+                                            <div class="exercise-line">
+                                                ${formatExercise(exercise)}
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+
+                    document.getElementById('output').innerHTML = outputHtml;
+                } else {
+                    const outputHtml = `
+                        <div class="container">
+                            <div class="exercise-line">
+                                Error ${data.message}
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('output').innerHTML = outputHtml;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                const outputHtml = `
+                        <div class="container">
+                            <div class="exercise-line">
+                                Error processing practice data
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('output').innerHTML = outputHtml;
+            }
+        }
+    </script>
+</body>
+
 </html>

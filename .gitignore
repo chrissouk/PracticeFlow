@@ -1,2 +1,17 @@
 /node_modules
-AI Practice Generator.code-workspace
+/Data/Raw
+/Data/Training
+/Models
+/__pycache__
+*.pyc
+.vscode
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*~
+\#*#
+.\#*
+config.json
+.env
+.code-workspace
