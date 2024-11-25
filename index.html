@@ -208,22 +208,22 @@
             const input = document.getElementById('input').value;
             console.log("Successfully defined input");
 
-            // try {
-                // const response = await fetch('http://localhost:3000/generate-practice', {
-                //     method: 'POST',
-                //     headers: {
-                //         'Content-Type': 'application/json',
-                //     },
-                //     body: JSON.stringify({ question: input }),
-                // });
+            try {
+                const response = await fetch('http://localhost:3000/generate-practice', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ question: input }),
+                });
 
-                // const data = await response.json();
-                // if (data.success) {
+                const data = await response.json();
+                if (data.success) {
                     // console.log("Recieved data: " + data)
                     // server data
-                    // const workout = parseWorkout(data.practice);
+                    const workout = parseWorkout(data.practice);
                     // perfect generation test
-                    const workout = parseWorkout("PRACTICETITLE Sprint SETID 0 SETTITLE Warm Up SETROUNDS 1 EXERCISEID 0 EXERCISEREPS  1  EXERCISEDISTANCE  1000  EXERCISEINTERVAL  900  EXERCISEENERGY EN1  EXERCISETYPE  WU  EXERCISESTROKE  CH1  SETID  1  SETTITLE  Drills  SETROUNDS  4 EXERCISEID 0 EXERCISEREPS 3 EXERCISEDISTANCE 75 EXERCISEINTERVAL 80 EXERCISEENERGY EN1 EXERCISETYPE D EXERCISESTROKE CH1 EXERCISEID 1 EXERCISEREPS  3  EXERCISEDISTANCE  25  EXERCISEINTERVAL  30  EXERCISEENERGY  EN3 EXERCISETYPE  S  EXERCISESTROKE  CH1  SETID  2  SETTITLE  Resistance  SETROUNDS  4 EXERCISEID 0 EXERCISEREPS 4 EXERCISEDISTANCE 25 EXERCISEINTERVAL 30 EXERCISEENERGY EN3 EXERCISETYPE S EXERCISESTROKE CH1 EXERCISEID 1 EXERCISEREPS  3  EXERCISEDISTANCE  50  EXERCISEINTERVAL  60  EXERCISEENERGY  EN3 EXERCISETYPE  S  EXERCISESTROKE  CH1  SETID  3  SETTITLE  Start  Work  SETROUNDS  1 EXERCISEID 0 EXERCISEREPS 8 EXERCISEDISTANCE 25 EXERCISEINTERVAL 90 EXERCISEENERGY EN1 EXERCISETYPE S EXERCISESTROKE CH1 SETID 4 SETTITLE Front End Speed SETROUNDS 3 EXERCISEID 0 EXERCISEREPS 1 EXERCISEDISTANCE 50 EXERCISEINTERVAL 180 EXERCISEENERGY SP1 EXERCISETYPE S EXERCISESTROKE CH1 EXERCISEID 1 EXERCISEREPS 2 EXERCISEDISTANCE 100 EXERCISEINTERVAL 120 EXERCISEENERGY EN1 EXERCISETYPE S EXERCISESTROKE CH1 EXERCISEID 2 EXERCISEREPS  1  EXERCISEDISTANCE  50  EXERCISEINTERVAL  60  EXERCISEENERGY  SP3 EXERCISETYPE S EXERCISESTROKE CH1 EXERCISEID 3 EXERCISEREPS 1 EXERCISEDISTANCE 200 EXERCISEINTERVAL 240 EXERCISEENERGY REC EXERCISETYPE S EXERCISESTROKE CH1 SETID 5 SETTITLE Untitled SETROUNDS 1 EXERCISEID 0 EXERCISEREPS  1  EXERCISEDISTANCE  300  EXERCISEINTERVAL  360  EXERCISEENERGY EN1 EXERCISETYPE S EXERCISESTROKE CH1")
+                    // const workout = parseWorkout("PRACTICETITLE Sprint SETID 0 SETTITLE Warm Up SETROUNDS 1 EXERCISEID 0 EXERCISEREPS  1  EXERCISEDISTANCE  1000  EXERCISEINTERVAL  900  EXERCISEENERGY EN1  EXERCISETYPE  WU  EXERCISESTROKE  CH1  SETID  1  SETTITLE  Drills  SETROUNDS  4 EXERCISEID 0 EXERCISEREPS 3 EXERCISEDISTANCE 75 EXERCISEINTERVAL 80 EXERCISEENERGY EN1 EXERCISETYPE D EXERCISESTROKE CH1 EXERCISEID 1 EXERCISEREPS  3  EXERCISEDISTANCE  25  EXERCISEINTERVAL  30  EXERCISEENERGY  EN3 EXERCISETYPE  S  EXERCISESTROKE  CH1  SETID  2  SETTITLE  Resistance  SETROUNDS  4 EXERCISEID 0 EXERCISEREPS 4 EXERCISEDISTANCE 25 EXERCISEINTERVAL 30 EXERCISEENERGY EN3 EXERCISETYPE S EXERCISESTROKE CH1 EXERCISEID 1 EXERCISEREPS  3  EXERCISEDISTANCE  50  EXERCISEINTERVAL  60  EXERCISEENERGY  EN3 EXERCISETYPE  S  EXERCISESTROKE  CH1  SETID  3  SETTITLE  Start  Work  SETROUNDS  1 EXERCISEID 0 EXERCISEREPS 8 EXERCISEDISTANCE 25 EXERCISEINTERVAL 90 EXERCISEENERGY EN1 EXERCISETYPE S EXERCISESTROKE CH1 SETID 4 SETTITLE Front End Speed SETROUNDS 3 EXERCISEID 0 EXERCISEREPS 1 EXERCISEDISTANCE 50 EXERCISEINTERVAL 180 EXERCISEENERGY SP1 EXERCISETYPE S EXERCISESTROKE CH1 EXERCISEID 1 EXERCISEREPS 2 EXERCISEDISTANCE 100 EXERCISEINTERVAL 120 EXERCISEENERGY EN1 EXERCISETYPE S EXERCISESTROKE CH1 EXERCISEID 2 EXERCISEREPS  1  EXERCISEDISTANCE  50  EXERCISEINTERVAL  60  EXERCISEENERGY  SP3 EXERCISETYPE S EXERCISESTROKE CH1 EXERCISEID 3 EXERCISEREPS 1 EXERCISEDISTANCE 200 EXERCISEINTERVAL 240 EXERCISEENERGY REC EXERCISETYPE S EXERCISESTROKE CH1 SETID 5 SETTITLE Untitled SETROUNDS 1 EXERCISEID 0 EXERCISEREPS  1  EXERCISEDISTANCE  300  EXERCISEINTERVAL  360  EXERCISEENERGY EN1 EXERCISETYPE S EXERCISESTROKE CH1")
                     // bad generation test
                     // const workout = parseWorkout("EXERCISESTROKE CH1 EXERCISEID 2 EXERCISEREPS 2 EXERCISEDISTANCE 200 EXERCISEENERGY EN1 EXERCISETYPE S EXERCISESTROKE CH1 EXERCISEID 3 EXERCISEREPS 2 EXERCISEDISTANCE 150 EXERCISEENERGY EN2 EX")
 
@@ -247,13 +247,27 @@
                     `;
 
                     document.getElementById('output').innerHTML = outputHtml;
-        //         } else {
-        //             document.getElementById('output').textContent = `Error: ${data.message}`;
-        //         }
-        //     } catch (error) {
-        //         console.error('Error:', error);
-        //         document.getElementById('output').textContent = 'Error processing practice data';
-        //     }
+                } else {
+                    const outputHtml = `
+                        <div class="container">
+                            <div class="exercise-line">
+                                Error ${data.message}
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('output').innerHTML = outputHtml;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                const outputHtml = `
+                        <div class="container">
+                            <div class="exercise-line">
+                                Error processing practice data
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('output').innerHTML = outputHtml;
+            }
         }
     </script>
 </body>
