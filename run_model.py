@@ -148,7 +148,7 @@ def initialize_llm(llm_config, model, tokenizer):
         tokenizer=tokenizer,
         # tokenizer_name=LLM_MODEL_NAME,
         # model_name=LLM_MODEL_NAME,
-        # device_map="auto",
+        device_map="auto",
 
     )
 
