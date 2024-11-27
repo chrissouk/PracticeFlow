@@ -127,7 +127,7 @@ llm = HuggingFaceLLM(
     device_map="auto",
     # quantization_config=quantization_config,
     # use below only if using CUDA to reduce memory usage
-    # model_kwargs={"torch_dtype": torch.float16 , "load_in_8bit":True}
+    model_kwargs={"torch_dtype": torch.float16 , "load_in_8bit":True}
 )
 
 """[Migrating from ServiceContext to Settings](https://docs.llamaindex.ai/en/stable/module_guides/supporting_modules/service_context_migration/)

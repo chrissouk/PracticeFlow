@@ -27,6 +27,8 @@ login(token=HF_KEY,add_to_git_credential=True)
 
 # GPU acceleration with metal on Mac
 device = torch.device("metal") if torch.cuda.is_available() else torch.device("cpu")
+print("Device")
+print(device)
 
 warnings.filterwarnings(
     "ignore", 
@@ -102,7 +104,7 @@ def load_index(directory_path):
 #     log_time("Model and tokenizer loaded." + "██" * 10)
 #     return model, tokenizer
 def load_model(directory_path):
-    pipe = pipeline("text-generation", model=os.path.join(directory_path, 'llm_pipeline'))#, device=0) # run on gpu
+    pipe = pipeline("text-generation", model=os.path.join(directory_path, 'llm_pipeline'), device=device) # run on gpu
     model = pipe.model
     tokenizer = pipe.tokenizer
     
