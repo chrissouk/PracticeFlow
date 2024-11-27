@@ -4,6 +4,7 @@ huggingface_hub
 joblib
 langchain
 langchain-community
+langchain-huggingface
 logging
 llama-index
 llama_index.llms.huggingface
