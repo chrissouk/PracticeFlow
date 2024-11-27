@@ -6,6 +6,7 @@ langchain
 langchain-community
 logging
 llama-index
+llama_index.llms.huggingface
 numpy
 pandas
 psutil
