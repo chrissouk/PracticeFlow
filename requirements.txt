@@ -7,6 +7,7 @@ langchain-community
 langchain-huggingface
 logging
 llama-index
+llama_index.embeddings.langchain
 llama_index.llms.huggingface
 numpy
 pandas
@@ -15,3 +16,4 @@ pydantic
 python-dotenv
 torch
 transformers
+-U bitsandbytes
