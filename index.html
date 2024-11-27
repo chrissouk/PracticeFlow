@@ -118,7 +118,7 @@
                                 id: tokens[++i] || (++lastExerciseID).toString,
                                 reps: 1, 
                                 distance: 0,
-                                interval: '',
+                                // interval: '',
                                 energy: '',
                                 type: '',
                                 stroke: ''
@@ -137,18 +137,18 @@
                             currentExercise.distance = parseInt(tokens[++i]) || 0;
                         }
                         break;
-                    case 'EXERCISEINTERVAL':
-                        if (currentExercise) {
-                            // format interval
-                            const seconds = parseInt(tokens[++i]);
-                            const minutes = Math.floor(seconds / 60);
-                            const remainingSeconds = Math.floor(seconds % 60);
+                    // case 'EXERCISEINTERVAL':
+                    //     if (currentExercise) {
+                    //         // format interval
+                    //         const seconds = parseInt(tokens[++i]);
+                    //         const minutes = Math.floor(seconds / 60);
+                    //         const remainingSeconds = Math.floor(seconds % 60);
                             
-                            const interval = `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+                    //         const interval = `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
 
-                            currentExercise.interval = interval
-                        }
-                        break;
+                    //         currentExercise.interval = interval
+                    //     }
+                    //     break;
                     case 'EXERCISEENERGY':
                         if (currentExercise) {
                             currentExercise.energy = tokens[++i] || '';
@@ -189,9 +189,9 @@
             if (exercise.distance > 0) {
                 parts.push(`${exercise.distance}`);
             }
-            if (exercise.interval) {
-                parts.push(`@ ${exercise.interval}`)
-            }
+            // if (exercise.interval) {
+            //     parts.push(`@ ${exercise.interval}`)
+            // }
             if (exercise.energy) {
                 parts.push(`${exercise.energy}`);
             }

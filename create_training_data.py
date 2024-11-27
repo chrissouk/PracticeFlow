@@ -47,8 +47,8 @@ for index, row in practice_csv.iterrows():
           practice.append("EXERCISEDISTANCE")
           practice.append(row['distance'])
 
-          practice.append("EXERCISEINTERVAL")
-          practice.append(row['interval'])
+          # practice.append("EXERCISEINTERVAL")
+          # practice.append(row['interval'])
 
           practice.append("EXERCISEENERGY")
           practice.append(row['energy'])
