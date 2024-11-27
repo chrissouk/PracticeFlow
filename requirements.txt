@@ -1,0 +1,15 @@
+faiss-cpu
+fpdf
+huggingface_hub
+joblib
+langchain
+langchain-community
+logging
+llama-index
+numpy
+pandas
+psutil
+pydantic
+python-dotenv
+torch
+transformers
