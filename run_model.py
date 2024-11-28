@@ -26,7 +26,9 @@ HF_KEY = os.getenv('HF_KEY')
 login(token=HF_KEY,add_to_git_credential=True)
 
 # GPU acceleration with metal on Mac
-device = torch.device("metal") if torch.cuda.is_available() else torch.device("cpu")
+device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+print("Device")
+print(device)
 
 warnings.filterwarnings(
     "ignore", 
@@ -102,7 +104,7 @@ def load_index(directory_path):
 #     log_time("Model and tokenizer loaded." + "██" * 10)
 #     return model, tokenizer
 def load_model(directory_path):
-    pipe = pipeline("text-generation", model=os.path.join(directory_path, 'llm_pipeline'))#, device=0) # run on gpu
+    pipe = pipeline("text-generation", model=os.path.join(directory_path, 'llm_pipeline'), device=device) # run on gpu
     model = pipe.model
     tokenizer = pipe.tokenizer
     
@@ -119,7 +121,7 @@ def load_embedding_model(directory_path):
 
     with open(embedding_model_path, "rb") as f:
         embed_model = pickle.load(f)
-        log_time("Embedding model loaded." + "██" * 10)
+        log_time("Embedding model loaded.")
     return embed_model
 
 
@@ -130,7 +132,7 @@ def load_config(directory_path):
 
     with open(config_file_path, "r") as f:
         llm_config = json.load(f)
-        log_time("LLM configuration loaded." + "██" * 100)
+        log_time("LLM configuration loaded.")
     return llm_config
 
 
@@ -146,7 +148,7 @@ def initialize_llm(llm_config, model, tokenizer):
         tokenizer=tokenizer,
         # tokenizer_name=LLM_MODEL_NAME,
         # model_name=LLM_MODEL_NAME,
-        # device_map="auto",
+        device_map="auto",
 
     )
 

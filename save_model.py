@@ -26,7 +26,9 @@ HF_KEY = os.getenv('HF_KEY')
 login(token=HF_KEY,add_to_git_credential=True)
 
 # GPU acceleration with metal on Mac
-device = torch.device("metal") if torch.cuda.is_available() else torch.device("cpu")
+# to install torch for cuda, pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+print(torch.cuda.get_device_name(0))
+device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 # Function to find all PDF files in a directory and its subdirectories
 def find_all_pdfs(directory):
@@ -125,7 +127,6 @@ llm = HuggingFaceLLM(
     tokenizer_name=LLM_MODEL_NAME,
     model_name=LLM_MODEL_NAME,
     device_map="auto",
-    # quantization_config=quantization_config,
     # use below only if using CUDA to reduce memory usage
     # model_kwargs={"torch_dtype": torch.float16 , "load_in_8bit":True}
 )
@@ -197,7 +198,7 @@ def save_model_components(index, embed_model, llm, path):
 
     # Save the entire pipeline
     pipeline_name = "text-generation"
-    pipe = pipeline(pipeline_name, model=model, tokenizer=tokenizer)
+    pipe = pipeline(pipeline_name, model=model, tokenizer=tokenizer, device=device)
     pipe.save_pretrained(os.path.join(path, 'llm_pipeline'))
 
     # Save the LLM configuration
