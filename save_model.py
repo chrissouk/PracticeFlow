@@ -30,7 +30,8 @@ login(token=HF_KEY,add_to_git_credential=True)
 print(torch.cuda.get_device_name(0))
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
-# Function to find all PDF files in a directory and its subdirectories
+
+### LOAD DOCUMENTS
 def find_all_pdfs(directory):
     pdf_files = []
     for root, _, files in os.walk(directory):
@@ -69,13 +70,6 @@ for i in range(0, len(pdf_files), batch_size):
         except Exception as e:
             logging.warning(f"Failed to read {pdf_file}: {e}")
 
-# Print the first document
-if documents:
-    print("█"*30)
-    print(documents[0])
-else:
-    print("No documents found.")
-
 """**Vector Embedding**
 
 [Local Embeddings with HuggingFace](https://docs.llamaindex.ai/en/stable/examples/embeddings/huggingface/)
@@ -99,15 +93,8 @@ index = VectorStoreIndex.from_documents(documents, embed_model = embed_model)
 """Set up prompts"""
 
 system_prompt = """<SYSTEM># You are an AI-enabled swim coach.
-Generate a swim workout in the exact format of the provided context.
-Use all-caps tokens found in context.
-Do NOT generate any additional text outside these tokens.
-Include a variety of sets and exercises
-Maintain exact capitalization and spacing of tokens
-Prioritize variety in strokes, techniques, and intensities
-Ensure each set has a unique SETID
-Use appropriate values for EXERCISEENERGY (EN1, EN3, SP1, SP3, REC) and EXERCISETYPE (WU, D, S)
-Adjust difficulty and volume based on the workout title
+Your goal is to generate a new sequence of sets using the same all-caps labels as the ones in the provided context.
+Base your sets off the practice title given by the user
 """
 
 # This will wrap the default prompts that are internal to llama-index
@@ -143,33 +130,7 @@ Settings.llm = llm
 Settings.chunk_size = 1024
 #Settings.chunk_overlap = 256
 
-"""
-Initialize the Query Engine
-"""
 
-query_engine = index.as_query_engine(llm=llm, similarity_top_k=5)
-
-"""Format the output with line wrapping enabled"""
-
-# def set_css():
-#   display(HTML('''
-#   <style>
-#     pre {
-#         white-space: pre-wrap;
-#     }
-#   </style>
-#   '''))
-# get_ipython().events.register('pre_run_cell', set_css)
-
-"""Generate contextual results using retrieval-augmented prompt"""
-
-# done = False
-# while not done:
-#   print("*"*30)
-#   question = input("Enter your question: ")
-#   response = query_engine.query(question)
-#   print(response)
-#   done = input("End the chat? (y/n): ") == "y"
 
 
 # Function to save components

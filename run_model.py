@@ -25,20 +25,18 @@ load_dotenv()
 HF_KEY = os.getenv('HF_KEY')
 login(token=HF_KEY,add_to_git_credential=True)
 
-# GPU acceleration with metal on Mac
+# GPU acceleration with CUDA
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-print("Device")
-print(device)
 
+# Error hiding
 warnings.filterwarnings(
     "ignore", 
-    message="Field \"model_id\" has conflict with protected namespace \"model_\"."
+    message="Field \"model_id\" in DeployedModel has conflict with protected namespace \"model_\"."
 )
-
-# Modify the config for pydantic models
 BaseModel.model_config = {'protected_namespaces': ()}
 
-# Function to find all PDF files in a directory and its subdirectories
+
+### Load RAG documents
 def find_all_pdfs(directory):
     pdf_files = []
     for root, _, files in os.walk(directory):
@@ -80,7 +78,6 @@ def read_documents():
     # print(documents[0])
     return documents
 
-# Load the vector index
 def load_index(directory_path):
     index_file_path = os.path.join(directory_path, "index.pkl")
 
@@ -90,25 +87,11 @@ def load_index(directory_path):
     log_time(f"Index loaded from {index_file_path}")
     return index
 
-
-# Load the model and tokenizer
-# def load_model(directory_path):
-#     model_save_path = os.path.join(directory_path, "llm_model")
-#     print(model_save_path)
-#     tokenizer_save_path = os.path.join(directory_path, "llm_tokenizer")
-#     print(tokenizer_save_path)
-
-#     model = AutoModelForCausalLM.from_pretrained(model_save_path)
-#     tokenizer = AutoTokenizer.from_pretrained(tokenizer_save_path)
-
-#     log_time("Model and tokenizer loaded." + "██" * 10)
-#     return model, tokenizer
 def load_model(directory_path):
     pipe = pipeline("text-generation", model=os.path.join(directory_path, 'llm_pipeline'), device=device) # run on gpu
     model = pipe.model
     tokenizer = pipe.tokenizer
     
-    # Verify compatibility
     if model.config.name_or_path != tokenizer.name_or_path:
         raise ValueError("Model and tokenizer are incompatible")
     
@@ -204,42 +187,39 @@ def initialize_all(directory):
     configure_settings(embed_model, llm)
     return model, tokenizer, embed_model, llm_config, llm
 
-def get_embeddings(chunks, model, tokenizer, batch_size=8):
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
+# def get_embeddings(chunks, model, tokenizer, batch_size=8):
+#     if tokenizer.pad_token is None:
+#         tokenizer.pad_token = tokenizer.eos_token
 
-    log_time("Get embeddings")
+#     log_time("Get embeddings")
 
-    all_embeddings = []
+#     all_embeddings = []
 
-    for i in range(0, len(chunks), batch_size):
-        batch_chunks = chunks[i:i + batch_size]
+#     for i in range(0, len(chunks), batch_size):
+#         batch_chunks = chunks[i:i + batch_size]
 
-        # Tokenize the batch
-        inputs = tokenizer(batch_chunks, padding=True, truncation=True, return_tensors="pt", max_length=512, add_special_tokens=True).to(device)
+#         # Tokenize the batch
+#         inputs = tokenizer(batch_chunks, padding=True, truncation=True, return_tensors="pt", max_length=512, add_special_tokens=True).to(device)
 
-        with torch.no_grad():
-            outputs = model(**inputs)
+#         with torch.no_grad():
+#             outputs = model(**inputs)
         
-        # Extract embeddings and convert to numpy
-        embeddings = outputs.last_hidden_state.mean(dim=1).cpu().numpy()
+#         # Extract embeddings and convert to numpy
+#         embeddings = outputs.last_hidden_state.mean(dim=1).cpu().numpy()
         
-        # Store the embeddings
-        all_embeddings.append(embeddings)
+#         # Store the embeddings
+#         all_embeddings.append(embeddings)
 
-        # Log memory usage (optional)
-        check_memory_usage()
+#         # Log memory usage (optional)
+#         check_memory_usage()
 
-    all_embeddings = np.vstack(all_embeddings)  # Combine all embeddings into a single array
-    log_time("Embeddings retrieved.")
+#     all_embeddings = np.vstack(all_embeddings)  # Combine all embeddings into a single array
+#     log_time("Embeddings retrieved.")
     
-    return all_embeddings
+#     return all_embeddings
   
 def load_embed_index():
     try:
-        logging.info("Loading vector index from pickle...")
-
-        # Load the vector index using pickle
         index = faiss.read_index("Models/llama_3_model/vector_index/index.faiss")
 
         # Load responses
@@ -250,19 +230,19 @@ def load_embed_index():
         logging.error(f"Failed to load vector index: {e}")
         return None, None
 
-def check_memory_usage(threshold_percent=80):
-    # Get current memory usage
-    memory_percent = psutil.virtual_memory().percent
+# def check_memory_usage(threshold_percent=80):
+#     # Get current memory usage
+#     memory_percent = psutil.virtual_memory().percent
     
-    # Log memory usage for monitoring
-    logging.info(f"Current memory usage: {memory_percent}%")
+#     # Log memory usage for monitoring
+#     logging.info(f"Current memory usage: {memory_percent}%")
     
-    # Check if memory usage exceeds the threshold
-    if memory_percent > threshold_percent:
-        logging.warning(f"High memory usage ({memory_percent}%), consider pausing processing.")
-        return False
+#     # Check if memory usage exceeds the threshold
+#     if memory_percent > threshold_percent:
+#         logging.warning(f"High memory usage ({memory_percent}%), consider pausing processing.")
+#         return False
     
-    return True
+#     return True
 
 def find_best_response(text, embeddings_model, index, responses):
     # Generate embedding for the input text
@@ -278,28 +258,28 @@ def find_best_response(text, embeddings_model, index, responses):
 # Generate answer from context:
 def generate_response_from_context(model, tokenizer, question, context):
     try:
-        # log_time("Tokenizing input...")
+        log_time("Tokenizing input...")
 
         input_text = f"Question: {question}\nContext: {context}"
         inputs = tokenizer(input_text, return_tensors="pt").to(device)
-        # log_time("Input tokenized.")
+        log_time("Input tokenized.")
 
-        # log_time("Generating response...")
+        log_time("Generating response...")
         start_time = time.time()
 
         output = model.generate(
             input_ids=inputs["input_ids"],
             attention_mask=inputs["attention_mask"],
-            max_new_tokens=50,
+            max_new_tokens=100,
             pad_token_id=tokenizer.eos_token_id,
         )
         
         end_time = time.time()
-        # log_time(f"Response generated in {end_time - start_time:.2f} seconds.")
+        log_time(f"Response generated in {end_time - start_time:.2f} seconds.")
 
-        # log_time("Decoding response...")
+        log_time("Decoding response...")
         response = tokenizer.decode(output[0][inputs["input_ids"].shape[-1]:], skip_special_tokens=True)
-        # log_time("Response decoded.")
+        log_time("Response decoded.")
 
         return response
     except Exception as e:
@@ -310,20 +290,6 @@ def generate_response_from_context(model, tokenizer, question, context):
 # Initialize the model, tokenizer, and settings when the module is imported
 model, tokenizer, embed_model, llm_config, llm = initialize_all(model_directory)
 index, responses = load_embed_index()
-
-def runConsole():
-  while True:
-      input_text = input("Enter your question or type 'exit' to quit: ")
-      print(type(input_text))
-      if input_text == 'exit':
-          break
-    #   print(input_text)
-      best_context = find_best_response(input_text, embed_model, index, responses)
-      print("Context: " + best_context)
-      response = generate_response_from_context(model, tokenizer, input_text, best_context)
-      print("Answer: " + response)
-
-# runConsole()
 
 import sys
 
