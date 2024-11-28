@@ -4,7 +4,7 @@ import sys
 import time
 import pickle
 import torch
-import faiss
+import faissZ
 import psutil
 import logging
 import warnings
@@ -25,18 +25,9 @@ load_dotenv()
 HF_KEY = os.getenv('HF_KEY')
 login(token=HF_KEY,add_to_git_credential=True)
 
-# GPU acceleration with CUDA if avaliable, otherwise use cpu (Metal is slow)
-device = torch.device("cpu")
-print(torch.backends.mps.is_available())
-if torch.cuda.is_available():
-    device = torch.device("cuda")
-# elif torch.backends.mps.is_available():
-#     device = torch.device("mps")
+# GPU acceleration with CUDA
+device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device("mps")
-print(device)
-
-# warning hiding
 warnings.filterwarnings(
     "ignore", 
     message="Field \"model_id\" in DeployedModel has conflict with protected namespace \"model_\"."
@@ -278,7 +269,7 @@ def generate_response_from_context(model, tokenizer, question, context):
         output = model.generate(
             input_ids=inputs["input_ids"],
             attention_mask=inputs["attention_mask"],
-            max_new_tokens=512,
+            max_new_tokens=50,
             pad_token_id=tokenizer.eos_token_id,
         )
         
