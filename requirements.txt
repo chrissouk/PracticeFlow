@@ -1,3 +1,4 @@
+bitsandbytes
 faiss-cpu
 fpdf
 huggingface_hub
@@ -16,4 +17,3 @@ pydantic
 python-dotenv
 torch
 transformers
--U bitsandbytes
