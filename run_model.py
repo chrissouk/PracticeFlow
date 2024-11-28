@@ -26,7 +26,7 @@ HF_KEY = os.getenv('HF_KEY')
 login(token=HF_KEY,add_to_git_credential=True)
 
 # GPU acceleration with metal on Mac
-device = torch.device("metal") if torch.cuda.is_available() else torch.device("cpu")
+device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 print("Device")
 print(device)
 
@@ -121,7 +121,7 @@ def load_embedding_model(directory_path):
 
     with open(embedding_model_path, "rb") as f:
         embed_model = pickle.load(f)
-        log_time("Embedding model loaded." + "██" * 10)
+        log_time("Embedding model loaded.")
     return embed_model
 
 
@@ -132,7 +132,7 @@ def load_config(directory_path):
 
     with open(config_file_path, "r") as f:
         llm_config = json.load(f)
-        log_time("LLM configuration loaded." + "██" * 100)
+        log_time("LLM configuration loaded.")
     return llm_config
 
 
