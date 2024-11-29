@@ -72,9 +72,7 @@
             };
 
             let currentSet = null;
-            let lastSetID = -1
             let currentExercise = null;
-            let lastExerciseID = -1
 
             for (let i = 0; i < tokens.length; i++) {
                 console.log(tokens[i] + " " + i)
@@ -82,54 +80,38 @@
                     case 'PRACTICETITLE':
                         workout.title = tokens[++i] || userDefinedPracticeDetails.title;
                         break;
-                    case 'SETID':
+                    case 'SETTITLE':
                         currentSet = {
-                            id: tokens[++i] || (++lastSetID).toString(),
-                            title: 'Untitled Set',
+                            title: tokens[++i] || 'Untitled Set',
                             rounds: 1,
                             exercises: []
                         };
                         workout.sets.push(currentSet)
-                        lastSetID = parseInt(currentSet.id)
-                        break;
-                    case 'SETTITLE':
-                        if (currentSet) {
-                            currentSet.title = tokens[++i] || 'Untitled Set';
-                        }
                         break;
                     case 'SETROUNDS':
                         if (currentSet) {
                             currentSet.rounds = parseInt(tokens[++i]) || 1;
                         }
                         break;
-                    case 'EXERCISEID':
-                        if (lastExerciseID == -1 && !currentSet) {  // if first exercise
+                    case 'EXERCISEREPS':
+                        if (!currentSet) {  // if first exercise
                             currentSet = {
-                                id: (++lastSetID).toString(),
                                 title: 'Untitled Set',
                                 rounds: 1,
                                 exercises: []
                             };
                             workout.sets.push(currentSet)
-                            // lastSetID = parseInt(currentSet.id)
                         } 
                         if (currentSet) {
                             currentExercise = {
-                                id: tokens[++i] || (++lastExerciseID).toString,
-                                reps: 1, 
+                                reps: parseInt(tokens[++i]) || 1, 
                                 distance: 0,
                                 // interval: '',
                                 energy: '',
                                 type: '',
                                 stroke: ''
                             };
-                            lastExerciseID = parseInt(currentExercise.id)
                             currentSet.exercises.push(currentExercise);
-                        }
-                        break;
-                    case 'EXERCISEREPS':
-                        if (currentExercise) {
-                            currentExercise.reps = parseInt(tokens[++i]) || 1;
                         }
                         break;
                     case 'EXERCISEDISTANCE':
@@ -166,16 +148,6 @@
                         break;
                 }
             }
-
-            // Push final exercise and set if they exist
-            // if (currentExercise && currentSet) {
-            //     console.log(currentSet.exercises)
-            //     console.log(currentExercise)
-            //     // currentSet.exercises.push(currentExercise);
-            // }
-            // if (currentSet) {
-            //     workout.sets.push(currentSet);
-            // }
 
             console.log(workout.sets)
             return workout;
