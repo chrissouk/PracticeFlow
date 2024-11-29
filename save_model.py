@@ -2,6 +2,7 @@ import os
 import logging
 import pickle
 import sys
+import warnings
 import psutil
 import joblib
 import json
@@ -9,6 +10,7 @@ from huggingface_hub import login
 from llama_index.core import SimpleDirectoryReader
 from langchain_huggingface import HuggingFaceEmbeddings  
 from llama_index.core import VectorStoreIndex, PromptTemplate, Settings
+from pydantic import BaseModel
 import torch
 from llama_index.llms.huggingface import HuggingFaceLLM
 from dotenv import load_dotenv
@@ -25,11 +27,21 @@ load_dotenv()
 HF_KEY = os.getenv('HF_KEY')
 login(token=HF_KEY,add_to_git_credential=True)
 
-# GPU acceleration with metal on Mac
-# to install torch for cuda, pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
-print(torch.cuda.get_device_name(0))
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+# GPU acceleration with CUDA if avaliable, otherwise use cpu. No Meal usage due to memory constraints
+# to install torch for cuda 12.4, pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+device = torch.device("cpu")
+if torch.cuda.is_available():
+    device = torch.device("cuda")
+# elif torch.backends.mps.is_available():
+#     device = torch.device("mps")
+print(device)
 
+# warning hiding
+warnings.filterwarnings(
+    "ignore", 
+    message="Field \"model_name\" in HuggingFaceLLM has conflict with protected namespace \"model_\""
+)
+BaseModel.model_config = {'protected_namespaces': ()}
 
 ### LOAD DOCUMENTS
 def find_all_pdfs(directory):

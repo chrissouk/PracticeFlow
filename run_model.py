@@ -25,10 +25,18 @@ load_dotenv()
 HF_KEY = os.getenv('HF_KEY')
 login(token=HF_KEY,add_to_git_credential=True)
 
-# GPU acceleration with CUDA
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+# GPU acceleration with CUDA if avaliable, otherwise use cpu (Metal is slow)
+device = torch.device("cpu")
+print(torch.backends.mps.is_available())
+if torch.cuda.is_available():
+    device = torch.device("cuda")
+# elif torch.backends.mps.is_available():
+#     device = torch.device("mps")
 
-# Error hiding
+device = torch.device("cuda") if torch.cuda.is_available() else torch.device("mps")
+print(device)
+
+# warning hiding
 warnings.filterwarnings(
     "ignore", 
     message="Field \"model_id\" in DeployedModel has conflict with protected namespace \"model_\"."
@@ -147,35 +155,35 @@ def configure_settings(embed_model, llm):
     log_time("Settings configured.")
 
 
-def generate_response(model, tokenizer, question):
-    # print("Generating response")
-    try:
-        log_time(f"Using device: {device}")
+# def generate_response(model, tokenizer, question):
+#     # print("Generating response")
+#     try:
+#         log_time(f"Using device: {device}")
 
-        log_time("Tokenizing input...")
-        inputs = tokenizer(question, return_tensors="pt").to(device)
-        log_time("Input tokenized.")
+#         log_time("Tokenizing input...")
+#         inputs = tokenizer(question, return_tensors="pt").to(device)
+#         log_time("Input tokenized.")
 
-        log_time("Generating response...")
-        start_time = time.time()
-        # output = model.generate(**inputs, max_new_tokens=50, pad_token_id=tokenizer.eos_token_id)
+#         log_time("Generating response...")
+#         start_time = time.time()
+#         # output = model.generate(**inputs, max_new_tokens=50, pad_token_id=tokenizer.eos_token_id)
 
-        output = model.generate(
-            input_ids=inputs["input_ids"],
-            attention_mask=inputs["attention_mask"],
-            max_new_tokens=50,
-            pad_token_id=tokenizer.eos_token_id,
-        )
-        end_time = time.time()
-        log_time(f"Response generated in {end_time - start_time:.2f} seconds.")
+#         output = model.generate(
+#             input_ids=inputs["input_ids"],
+#             attention_mask=inputs["attention_mask"],
+#             max_new_tokens=50,
+#             pad_token_id=tokenizer.eos_token_id,
+#         )
+#         end_time = time.time()
+#         log_time(f"Response generated in {end_time - start_time:.2f} seconds.")
 
-        log_time("Decoding response...")
-        response = tokenizer.decode(output[0][inputs["input_ids"].shape[-1]:], skip_special_tokens=True)
-        log_time("Response decoded.")
-        return response
-    except Exception as e:
-        log_time(f"Failed to generate response: {e}")
-        return None
+#         log_time("Decoding response...")
+#         response = tokenizer.decode(output[0][inputs["input_ids"].shape[-1]:], skip_special_tokens=True)
+#         log_time("Response decoded.")
+#         return response
+#     except Exception as e:
+#         log_time(f"Failed to generate response: {e}")
+#         return None
 
 
 def initialize_all(directory):
@@ -270,7 +278,7 @@ def generate_response_from_context(model, tokenizer, question, context):
         output = model.generate(
             input_ids=inputs["input_ids"],
             attention_mask=inputs["attention_mask"],
-            max_new_tokens=100,
+            max_new_tokens=50,
             pad_token_id=tokenizer.eos_token_id,
         )
         
