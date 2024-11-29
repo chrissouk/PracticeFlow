@@ -14,7 +14,8 @@ Thumbs.db
 .\#*
 config.json
 .env
-AI Practice Generator.code-workspace
+*.code-workspace
 .vs/AI-Practice-Generator/v16/.suo
 .vs/VSWorkspaceState.json
 .vs/slnx.sqlite
+package-lock.json
