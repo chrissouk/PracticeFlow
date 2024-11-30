@@ -46,17 +46,56 @@ for index, row in practice_csv.iterrows():
 
           practice.append("EXERCISEDISTANCE")
           practice.append(row['distance'])
+          practice.append("yards")
 
           # practice.append("EXERCISEINTERVAL")
           # practice.append(row['interval'])
 
-          practice.append("EXERCISEENERGY")
-          practice.append(row['energy'])
+          practice.append("EXERCISEENERGY")  # TODO: rename to effort or intensity across all files
+          if row['energy'] == "EN1":
+            practice.append("75%")
+          elif row['energy'] == 'EN2':
+            practice.append("80%")
+          elif row['energy'] == 'EN3':
+            practice.append("85%")
+          elif row['energy'] == 'WU':
+            practice.append("warm up")
+          elif row['energy'] == 'REC':
+            practice.append("recovery")
+          elif row['energy'] == 'SP1':
+            practice.append("90%")
+          elif row['energy'] == 'SP2':
+            practice.append("95%")
+          elif row['energy'] == 'SP3':
+            practice.append("100%")
+          else:
+            practice.append(row['energy'])
 
           practice.append("EXERCISETYPE")
-          practice.append(row['type'])
+          if row['type'] == 'S':
+            practice.append("swim")
+          elif row['type'] == 'K':
+            practice.append("kick")
+          elif row['type'] == 'D':
+            practice.append("drill")
+          elif row['type'] == 'P':
+            practice.append("pull")
+          else:
+            practice.append(row['type'])
 
           practice.append("EXERCISESTROKE")
+          if row['stroke'].includes('CH'):
+            practice.append("any")
+          elif row['stroke'].includes('FL'):
+            practice.append("any")
+          elif row['stroke'].includes('BK'):
+            practice.append("any")
+          elif row['stroke'].includes('BR'):
+            practice.append("any")
+          elif row['stroke'].includes('FR'):
+            practice.append("any")
+          elif row['stroke'].includes('IM'):
+            practice.append("any")
           practice.append(row['stroke'])
 
   practice_data_list.append(practice)
