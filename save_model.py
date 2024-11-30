@@ -25,7 +25,7 @@ load_dotenv()
 HF_KEY = os.getenv('HF_KEY')
 login(token=HF_KEY,add_to_git_credential=True)
 
-# GPU acceleration with metal on Mac
+# GPU acceleration with cuda
 # to install torch for cuda, pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
 print(torch.cuda.get_device_name(0))
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -99,15 +99,8 @@ index = VectorStoreIndex.from_documents(documents, embed_model = embed_model)
 """Set up prompts"""
 
 system_prompt = """<SYSTEM># You are an AI-enabled swim coach.
-Generate a swim workout in the exact format of the provided context.
-Use all-caps tokens found in context.
-Do NOT generate any additional text outside these tokens.
-Include a variety of sets and exercises
-Maintain exact capitalization and spacing of tokens
-Prioritize variety in strokes, techniques, and intensities
-Ensure each set has a unique SETID
-Use appropriate values for EXERCISEENERGY (EN1, EN3, SP1, SP3, REC) and EXERCISETYPE (WU, D, S)
-Adjust difficulty and volume based on the workout title
+Your goal is to generate a sequence of sets using the same all-caps labels as in the provided context.
+Base your new workout off the user-provided title.
 """
 
 # This will wrap the default prompts that are internal to llama-index
