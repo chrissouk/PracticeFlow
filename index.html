@@ -31,33 +31,31 @@
         }
 
         function parseWorkout(input) {
-            console.log("Parsing workout...")
+            console.log("Parsing workout...");
 
             // tokenize
             const whitespace = /\s+/g;
             const whitespaceSplit = input.split(whitespace);
 
-            const allCaps = /\b[A-Z0-9]+\b/;
-            let nonAllCapsCount = 0;
+            let valueCount = 0;
             let tokens = [];
             whitespaceSplit.forEach((word, index, array) => {
                 // console.log(word)
-                if (!allCaps.test(word)) { // encounters nonAllCaps
-                    // console.log("nonAllCaps: " + word + "\n" + "nACC:" + nonAllCapsCount)
-                    nonAllCapsCount++;
-                } else if (/*allCaps.test(word) && */nonAllCapsCount == 0) { // first allCaps
-                    // console.log("first allCaps: " + word + "\n" + "nACC:" + nonAllCapsCount)
+                if (!(word.includes("PRACTICE") || word.includes("SET") || word.includes("EXERCISE"))) { // encounters value
+                    // console.log("value: " + word + "\n" + "vC:" + valueCount)
+                    valueCount++;
+                } else if (valueCount == 0) { // first allCaps
+                    // console.log("first allCaps: " + word + "\n" + "vC:" + valueCount)
                     tokens.push(word)
-                } else if (/*allCaps.test(word) && */nonAllCapsCount > 0) {  // stumbles upon allCaps after multiple nonAllCaps
+                } else if (valueCount > 0) {  // stumbles upon allCaps after multiple value
                     let phrase = ""
-                    for (let i = nonAllCapsCount; i > 0; i--) {
+                    for (let i = valueCount; i > 0; i--) {
                         phrase += " " + whitespaceSplit[index-i];
                     }
-                    phrase = phrase.trim()
-                    console.log("that other one: " + phrase + ", " + word + "\n" + "nACC:" + nonAllCapsCount)
-                    tokens.push(phrase)
-                    tokens.push(word)
-                    nonAllCapsCount = 0;
+                    phrase = phrase.trim();
+                    tokens.push(phrase);
+                    tokens.push(word);
+                    valueCount = 0;
                 }
             });
 
@@ -75,7 +73,7 @@
             let currentExercise = null;
 
             for (let i = 0; i < tokens.length; i++) {
-                console.log(tokens[i] + " " + i)
+                console.log(tokens[i] + " " + i);
                 switch (tokens[i]) {
                     case 'PRACTICETITLE':
                         workout.title = tokens[++i] || userDefinedPracticeDetails.title;
@@ -86,7 +84,7 @@
                             rounds: 1,
                             exercises: []
                         };
-                        workout.sets.push(currentSet)
+                        workout.sets.push(currentSet);
                         break;
                     case 'SETROUNDS':
                         if (currentSet) {
@@ -100,7 +98,7 @@
                                 rounds: 1,
                                 exercises: []
                             };
-                            workout.sets.push(currentSet)
+                            workout.sets.push(currentSet);
                         } 
                         if (currentSet) {
                             currentExercise = {
@@ -162,7 +160,7 @@
                 parts.push(`${exercise.distance}`);
             }
             // if (exercise.interval) {
-            //     parts.push(`@ ${exercise.interval}`)
+            //     parts.push(`@ ${exercise.interval}`);
             // }
             if (exercise.energy) {
                 parts.push(`${exercise.energy}`);
