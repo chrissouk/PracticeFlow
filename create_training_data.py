@@ -84,19 +84,22 @@ for index, row in practice_csv.iterrows():
             practice.append(row['type'])
 
           practice.append("EXERCISESTROKE")
-          if row['stroke'].includes('CH'):
-            practice.append("any")
-          elif row['stroke'].includes('FL'):
-            practice.append("any")
-          elif row['stroke'].includes('BK'):
-            practice.append("any")
-          elif row['stroke'].includes('BR'):
-            practice.append("any")
-          elif row['stroke'].includes('FR'):
-            practice.append("any")
-          elif row['stroke'].includes('IM'):
-            practice.append("any")
-          practice.append(row['stroke'])
+          if 'CH' in row['stroke']:
+              practice.append("chest")
+          elif 'FL' in row['stroke']:
+              practice.append("freestyle")
+          elif 'BK' in row['stroke']:
+              practice.append("backstroke")
+          elif 'BR' in row['stroke']:
+              practice.append("breaststroke")
+          elif 'FR' in row['stroke']:
+              practice.append("freestyle")
+          elif 'IM' in row['stroke']:
+              practice.append("individual medley")
+          elif 'STR' in row['stroke']:
+              practice.append("not freestyle")
+          else:
+              practice.append(row['stroke'])
 
   practice_data_list.append(practice)
 
