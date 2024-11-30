@@ -278,7 +278,7 @@ def generate_response_from_context(model, tokenizer, question, context):
         output = model.generate(
             input_ids=inputs["input_ids"],
             attention_mask=inputs["attention_mask"],
-            max_new_tokens=50,
+            max_new_tokens=512,
             pad_token_id=tokenizer.eos_token_id,
         )
         
