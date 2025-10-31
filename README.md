@@ -76,19 +76,20 @@ python run_model.py "PRACTICETITLE Sprint"
 - `create_training_data.py` — converts training CSVs into plain-text PDFs stored in `Data/Training/PDFS/`.
 - `run_model.py` — primary Python runner: loads model/tokenizer, embedding model, FAISS index, and generates responses.
 - `rag.py`, `save_model.py` — helper scripts for building the RAG pipeline and saving artifacts.
-- `server.js` — optional: small Node/Express server that demonstrates spawning `run_model.py` as a subprocess and exposing a `/generate-practice` endpoint.
+- `server.js`: small Node/Express server that exposes the AI backend via a `/generate-practice` endpoint. The server spawns `run_model.py` as a subprocess and is the primary way to access the AI from a web client or UI.
 - `requirements.txt` — Python dependencies.
 - `package.json` — Node dependencies for the optional server and parsing utilities.
 
 ## Node server and JavaScript notes
 
-- `server.js` is a lightweight example that uses `express`, `cors`, and `pdf-parse` to provide a simple API. It spawns the Python process and returns the generated practice text.
-- Several JavaScript files in the repo are parsing utilities or legacy AI code. The active ML/embedding/inference work is Python-first; the JS files are kept for parsing and the optional web API.
+`server.js` is a lightweight server that uses `express`, `cors`, and `pdf-parse` to provide the web API for the AI backend. It spawns the Python process and returns the generated practice text. Running the server is required if you want to access the AI from a browser or other web client.
 
-To run the Node server (optional)
+Several JavaScript files in the repo are parsing utilities or legacy AI code. The active ML/embedding/inference work is Python-first; the JS files are kept for parsing and the web API.
+
+To run the Node server
 
 ```bash
-# only required if you want the simple web API / parsing utilities
+# Install Node dependencies and start the server (this is required to access the AI backend from the web UI)
 npm install
 node server.js
 ```
